@@ -1,0 +1,21 @@
+{
+    "name": "cakebake/php-sources-combiner",
+    "description": "Combines php sources to one file",
+    "keywords": ["php", "sources", "combine", "merge", "files", "compile"],
+    "homepage": "http://cakebake.de/",
+    "license": "LGPL-V3",
+    "type": "library",
+    "authors": [
+        {
+            "name": "cakebake (Jens A.)",
+            "email": "cakebake.dev@gmail.com"
+        }
+    ],
+    "require": {
+        "php": ">=5.4.0",
+        "nikic/php-parser": "*"
+    },
+    "autoload": {
+        "psr-4": { "cakebake\\combiner\\": "src/" }
+    }
+}
