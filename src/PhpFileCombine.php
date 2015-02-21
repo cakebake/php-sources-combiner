@@ -14,11 +14,11 @@ class PhpFileCombine extends \PhpParser\PrettyPrinter\Standard
 
     protected $removeComments = false;
 
-    private $_baseDir = null;
-
     private $_parser = null;
 
     private $_currentFile = null;
+
+    private $_parsedFiles = [];
 
     /**
     * Combines the start file with its includes and namespaces
@@ -32,29 +32,39 @@ class PhpFileCombine extends \PhpParser\PrettyPrinter\Standard
 
     protected function combine()
     {
-        $parsedFile = $this->parseFile();
-        $code = '<?php' . PHP_EOL . $parsedFile['code'];
+        $code = '<?php' . PHP_EOL . $this->parseFile($this->startFile);
 
         return (file_put_contents($this->outputDir . DIRECTORY_SEPARATOR . $this->outputFile, $code, LOCK_EX) !== false) ? true : false;
     }
 
-    protected function parseFile($file = null)
+    protected function parseFile($file)
     {
-        $file = ($file !== null) ? $file : $this->startFile;
-        if (($fileContent = @file_get_contents($file)) === false || empty($fileContent))
+        if (($fileContent = @file_get_contents($file)) === false ||
+            empty($fileContent)) {
             throw new Exception("File \"{$file}\" is empty or not readable.");
+        }
 
-        $tree = $this->getParser()->parse($fileContent);
+        if (isset($this->_parsedFiles[$file]))
+            return $this->_parsedFiles[$file]['code'];
+
+        $this->_parsedFiles[$file] = [
+            'fileContent' => $fileContent,
+            'tree' => null,
+            'code' => null,
+        ];
+
+        $tree = $this->_parsedFiles[$file]['tree'] = $this->getParser()->parse($fileContent);
 
 //        if (isset($tree[0]) && ($tree[0] instanceof \PhpParser\Node\Stmt\Namespace_) === false) {
 //            $tree = [new \PhpParser\Node\Stmt\Namespace_(null, $tree)];
 //        }
 
-        return $this->_currentFile = [
-            'fileContent' => $fileContent,
-            'code' => $this->prettyPrint($tree),
-            'tree' => $tree,
-        ];
+        $lastFile = $this->_currentFile;
+        $this->_currentFile = $file;
+        $code = $this->_parsedFiles[$file]['code'] = $this->prettyPrint($tree);
+        $this->_currentFile = $lastFile;
+
+        return $code;
     }
 
     protected function getParser()
@@ -73,8 +83,6 @@ class PhpFileCombine extends \PhpParser\PrettyPrinter\Standard
     */
     protected function setConfiguration(array $conf)
     {
-        $conf['_baseDir'] = isset($conf['startFile']) ? @dirname($conf['startFile']) : null;
-
         foreach ($conf as $k => $i) {
             if (property_exists($this, $k)) {
                 if (empty($i) && !is_bool($i))
@@ -108,26 +116,26 @@ class PhpFileCombine extends \PhpParser\PrettyPrinter\Standard
             \PhpParser\Node\Expr\Include_::TYPE_REQUIRE_ONCE => 'require_once',
         ];
 
-        if (array_key_exists($node->type, $map)) {
+        $file = $this->getIncludeValue($node->expr, [
+            '__DIR__' => dirname($this->_currentFile),
+            '__FILE__' => $this->_currentFile,
+        ]);
 
-            $file = self::getIncludeValue($node->expr, [
-                '__DIR__' => dirname($this->startFile),
-                '__FILE__' => $this->startFile,
-            ]);
-
-            if (empty($file) || !file_exists($file)) {
-                throw new Exception("{$map[$node->type]} file \"$file\" not found in \"{$this->startFile}\" line {$node->getLine()}. Info: Do not use relative paths.");
-            }
-
-            $parsedFile = $this->parseFile($file);
-
-            return $parsedFile['code'] . PHP_EOL . '//EOF';
+        if (empty($file) || !file_exists($file)) {
+            throw new Exception("{$map[$node->type]} file \"$file\" not found in \"{$this->_currentFile}\" line {$node->getLine()}.");
         }
 
-        return parent::pExpr_Include($node);
+        if ($node->type == \PhpParser\Node\Expr\Include_::TYPE_INCLUDE_ONCE ||
+            $node->type == \PhpParser\Node\Expr\Include_::TYPE_REQUIRE_ONCE) {
+
+            if (isset($this->_parsedFiles[$file]) || $this->_currentFile == $file)
+                return null;
+        }
+
+        return $this->parseFile($file) . PHP_EOL . "//End of include :: $file";
     }
 
-    public static function getIncludeValue($node, array $constants = [])
+    public function getIncludeValue($node, array $constants = [])
     {
         $nodeClass = get_class($node);
 
