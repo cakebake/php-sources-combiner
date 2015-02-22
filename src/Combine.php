@@ -12,7 +12,7 @@ class Combine
 {
     private $conf = [];
 
-    private $phpFileCombine = null;
+    public $phpFileCombine = null;
 
     public function __construct(array $conf = [])
     {
@@ -32,6 +32,7 @@ class Combine
             'outputDir' => null,
             'outputFile' => null,
             'removeComments' => false,
+            'removeDebugInfo' => false,
         ], $conf);
     }
 }

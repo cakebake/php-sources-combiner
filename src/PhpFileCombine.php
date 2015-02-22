@@ -14,6 +14,8 @@ class PhpFileCombine extends \PhpParser\PrettyPrinter\Standard
 
     protected $removeComments = false;
 
+    protected $removeDebugInfo = false;
+
     private $_parser = null;
 
     private $_currentFile = null;
@@ -30,9 +32,18 @@ class PhpFileCombine extends \PhpParser\PrettyPrinter\Standard
         $this->combine();
     }
 
+    /**
+    * Returns all parsed files informations (startfile, includes, requires, ...)
+    * @return array Parsed files indexed by file path with value: ['fileContent' => 'Org code', 'tree' => 'Syntax tree from php parser', 'code' => 'Pretty printed code']
+    */
+    public function getParsedFiles()
+    {
+        return $this->_parsedFiles;
+    }
+
     protected function combine()
     {
-        $code = '<?php' . PHP_EOL . $this->parseFile($this->startFile);
+        $code = '<?php' . PHP_EOL . $this->cleanCode($this->parseFile($this->startFile));
 
         return (file_put_contents($this->outputDir . DIRECTORY_SEPARATOR . $this->outputFile, $code, LOCK_EX) !== false) ? true : false;
     }
@@ -132,7 +143,12 @@ class PhpFileCombine extends \PhpParser\PrettyPrinter\Standard
                 return null;
         }
 
-        return $this->parseFile($file) . PHP_EOL . "//End of include :: $file";
+        $code = null;
+        $code .= ($this->removeDebugInfo !== true) ? "#" . PHP_EOL . "# --- START {$map[$node->type]}('$file') in \"{$this->_currentFile}\" line {$node->getLine()} ---" . PHP_EOL . "#" . PHP_EOL : null;
+        $code .= $this->parseFile($file);
+        $code .= ($this->removeDebugInfo !== true) ? PHP_EOL : null;
+
+        return $code . '# --- END';
     }
 
     public function getIncludeValue($node, array $constants = [])
@@ -178,5 +194,12 @@ class PhpFileCombine extends \PhpParser\PrettyPrinter\Standard
 
                 return $node->value;
         }
+    }
+
+    protected function cleanCode($code)
+    {
+        $code = ($this->removeDebugInfo === true) ? str_replace('# --- END;', '', $code) : $code;
+
+        return $code;
     }
 }

@@ -15,6 +15,10 @@
         "php": ">=5.4.0",
         "nikic/php-parser": "*"
     },
+    "require-dev": {
+        "phpunit/phpunit": "*",
+        "mikey179/vfsStream": "*"
+    },
     "autoload": {
         "psr-4": { "cakebake\\combiner\\": "src/" }
     }
