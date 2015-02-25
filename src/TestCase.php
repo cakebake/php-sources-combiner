@@ -36,6 +36,8 @@ class TestCase extends \PHPUnit_Framework_TestCase
                 require dirname(__FILE__) . "/filename1.php";
                 require dirname(__FILE__) . "/filename2.php";
                 require dirname(__FILE__) . "/empty_file.php";
+                require dirname(__FILE__) . "/html.php";
+                require dirname(__FILE__) . "/plain.php";
                 echo "good bye!";
             ',
             'empty_dir' => [],
@@ -43,7 +45,9 @@ class TestCase extends \PHPUnit_Framework_TestCase
                 echo "Filename1.php";
             ',
             'filename2.php' => '<?php echo "echo in first line...";',
-            'empty_file.php' => '',
+            'empty_file.php' => '       ',
+            'html.php' => '<div class="test">Test HTML</div>',
+            'plain.php' => 'Plain Text...',
         ]);
     }
 

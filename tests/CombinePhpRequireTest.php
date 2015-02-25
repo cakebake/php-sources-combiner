@@ -17,6 +17,8 @@ class CombinePhpRequireTest extends cakebake\combiner\TestCase
             'startFile' => $this->getFilesystemStream('one_level/index.php'),
             'outputDir' => $this->tmpDir,
             'outputFile' => $outputFilename,
+            'removeDebugInfo' => false,
+            'removeComments' => false,
         ]);
 
         $this->assertFileHasNoErrors($this->tmpDir . DIRECTORY_SEPARATOR . $outputFilename);
@@ -25,5 +27,6 @@ class CombinePhpRequireTest extends cakebake\combiner\TestCase
         $this->assertTrue(isset($combinedFiles['vfs://one_level/index.php']));
         $this->assertTrue(isset($combinedFiles['vfs://one_level/filename1.php']));
         $this->assertTrue(isset($combinedFiles['vfs://one_level/filename2.php']));
+        $this->assertFalse(isset($combinedFiles['vfs://one_level/empty_file.php']));
     }
 }

@@ -50,9 +50,9 @@ class PhpFileCombine extends \PhpParser\PrettyPrinter\Standard
 
     protected function parseFile($file)
     {
-        if (($fileContent = @file_get_contents($file)) === false ||
+        if (($fileContent = @trim(@file_get_contents($file))) === false ||
             empty($fileContent)) {
-            throw new Exception("File \"{$file}\" is empty or not readable.");
+            return null;
         }
 
         if (isset($this->_parsedFiles[$file]))
@@ -143,10 +143,13 @@ class PhpFileCombine extends \PhpParser\PrettyPrinter\Standard
                 return null;
         }
 
-        $code = null;
-        $code .= ($this->removeDebugInfo !== true) ? "#" . PHP_EOL . "# --- START {$map[$node->type]}('$file') in \"{$this->_currentFile}\" line {$node->getLine()} ---" . PHP_EOL . "#" . PHP_EOL : null;
-        $code .= $this->parseFile($file);
-        $code .= ($this->removeDebugInfo !== true) ? PHP_EOL : null;
+        $code = '';
+        if (($parsed = $this->parseFile($file)) !== null) {
+            $code .= ($this->removeDebugInfo !== true) ? "#" . PHP_EOL . "# --- START {$map[$node->type]}('$file') in \"{$this->_currentFile}\" line {$node->getLine()} ---" . PHP_EOL . "#" . PHP_EOL : null;
+            $code .= $parsed;
+            $code .= ($this->removeDebugInfo !== true) ? PHP_EOL : '';
+
+        }
 
         return $code . '# --- END';
     }
@@ -198,7 +201,10 @@ class PhpFileCombine extends \PhpParser\PrettyPrinter\Standard
 
     protected function cleanCode($code)
     {
-        $code = ($this->removeDebugInfo === true) ? str_replace('# --- END;', '', $code) : $code;
+        $code = ($this->removeDebugInfo === true) ? str_replace(['# --- END;'], '', $code) : $code; //remove end markers to avoid unnecessary semicolon
+        $code = preg_replace("/<\?php([\s]?|[\s\t]*|[\r\n]*|[\r\n]+)*\?>/", PHP_EOL, $code); //remove empty php tags
+        $code = preg_replace("/(^[\r\n]*|[\r\n]+)[\s\t]*[\r\n]+/", PHP_EOL, $code); //remove empty lines
+        //$code = $code . '<?php echo "syntaxerror'; //test error in output file
 
         return $code;
     }
