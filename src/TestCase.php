@@ -98,4 +98,22 @@ class TestCase extends \PHPUnit_Framework_TestCase
     {
         $this->assertFileExists($filename);
     }
+
+    /**
+    * Sanitize filename
+    *
+    * @param string $filename
+    * @param string $seperator
+    * @return string
+    */
+    public static function sanitizeFilename($filename, $seperator = '_')
+    {
+        $filename = str_ireplace(array('test', '\\', '-', '/', '~', '_', $seperator), '', $filename);
+        $filename = str_replace(array('::', ':'), $seperator, $filename);
+        $filename = str_replace(array("?", "[", "]", "/", "\\", "=", "<", ">", ":", ";", ",", "'", "\"", "&", "$", "#", "*", "(", ")", "|", "~", "`", "!", "{", "}", chr(0)), null, $filename);
+        //$filename = str_replace(range('A', 'Z'), explode('~', $seperator . implode("~$seperator", range('a', 'z'))), $filename);
+        $filename = trim(trim($filename), $seperator);
+
+        return $filename;
+    }
 }

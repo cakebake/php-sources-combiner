@@ -8,9 +8,9 @@ class CombinePhpRequireTest extends cakebake\combiner\TestCase
 
     public function testOneLevelRequire()
     {
-        $this->assertFileExists(($stream = $this->getFilesystemStream('testOneLevelRequire/index.php')));
+        $this->assertFileExists($this->getFilesystemStream('testOneLevelRequire/index.php'));
 
-        $outputFilename = str_replace(array('::', ':', '\\'), '_', __METHOD__) . '.php';
+        $outputFilename = self::sanitizeFilename(__METHOD__ . '.php');
 
         $combine = new PhpFileCombine([
             'startFile' => $this->getFilesystemStream('testOneLevelRequire/index.php'),
