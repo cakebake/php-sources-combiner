@@ -6,16 +6,18 @@ use org\bovigo\vfs\vfsStream;
 
 class TestCase extends \PHPUnit_Framework_TestCase
 {
-    public $createTestFilesystem = false;
-
     protected $tmpDir = null;
 
-    private $_filesystem = [];
+    protected $filesystemDir = null;
+
+    private $_filesystem = null;
+
+    private $_loadedFilesystemKey = null;
 
     protected function setUp()
     {
         $this->tmpDir = realpath(__DIR__ . '/../tmp');
-        $this->createTestFilesystem();
+        $this->filesystemDir = realpath(__DIR__ . '/../tests/filesystem');
     }
 
     protected function tearDown()
@@ -23,30 +25,15 @@ class TestCase extends \PHPUnit_Framework_TestCase
         $this->destroyFilesystem();
     }
 
-    protected function createTestFilesystem()
-    {
-        if ($this->createTestFilesystem !== true)
-            return false;
-
-        $filesystem = glob(__DIR__ . '/../tests/filesystem/*.php');
-        if (!empty($filesystem)) {
-            foreach ($filesystem as $f) {
-                if (is_array(($structure = require $f)) && !empty($structure)) {
-                    $this->createFilesystem(pathinfo($f, PATHINFO_FILENAME), $structure);
-                }
-            }
-        }
-    }
-
     /**
     * Get filesystem by its key
     *
-    * @param string $key
+    * @param string $key Obsolet
     * @return {\org\bovigo\vfs\vfsStreamDirectory|vfsStreamDirectory}
     */
-    protected function getFilesystem($key)
+    protected function getFilesystem($key = 'obsolet')
     {
-        return isset($this->_filesystem[$key]) ? $this->_filesystem[$key] : null;
+        return $this->_filesystem;
     }
 
     /**
@@ -56,36 +43,40 @@ class TestCase extends \PHPUnit_Framework_TestCase
     * @param array $structure
     * @return {\org\bovigo\vfs\vfsStreamDirectory|vfsStreamDirectory}
     */
-    protected function createFilesystem($key, array $structure)
+    protected function createFilesystem($key, array $structure = array())
     {
-        if (!isset($this->_filesystem[$key])) {
-            $this->_filesystem[$key] = vfsStream::setup($key);
-            $this->_filesystem[$key] = vfsStream::create($structure, $this->_filesystem[$key]);
+        if ($key != $this->_loadedFilesystemKey) {
+            if (empty($structure)) {
+                if (file_exists(($file = $this->filesystemDir . '/' . $key . '.php'))) {
+                    if (is_array(($array = require $file)) && !empty($array)) {
+                        $structure = $array;
+                    }
+                }
+            }
+
+            $this->_filesystem = vfsStream::setup($key, null, $structure);
+            $this->_loadedFilesystemKey = $key;
         }
     }
 
     /**
     * Destroy filesystem
     *
-    * @param string $key 'all' for all stored filesystem or key for specific
+    * @param string $key Obsolet
     */
-    protected function destroyFilesystem($key = 'all')
+    protected function destroyFilesystem($key = 'obsolet')
     {
-        if ($key == 'all') {
-            $this->_filesystem = null;
-        } elseif (isset($this->_filesystem[$key])) {
-            unset($this->_filesystem[$key]);
-        }
+        $this->_filesystem = null;
     }
 
     /**
     * Get an filesystem stream
     *
-    * @param string $pointer Filesystem url like 'vfs://app/index.php' where app is the filesystem key
+    * @param string $pointer Filesystem url like 'index.php'
     */
     protected function getFilesystemStream($pointer)
     {
-        return vfsStream::url($pointer);
+        return vfsStream::url($this->_loadedFilesystemKey . '/' . $pointer);
     }
 
     /**

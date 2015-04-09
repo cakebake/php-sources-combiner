@@ -2,17 +2,19 @@
 
 class EnvironmentTest extends cakebake\combiner\TestCase
 {
-    public $createTestFilesystem = true;
-
     public function testFilesystemApi()
     {
-        return $this->assertTrue($this->getFilesystem('testOneLevelRequire')->hasChild('index.php'));
+        $this->createFilesystem('testOneLevelRequire');
+
+        return $this->assertTrue($this->getFilesystem()->hasChild('index.php'));
     }
 
     public function testFilesystemStream()
     {
-        $this->assertFileExists($this->getFilesystemStream('testOneLevelRequire/index.php'));
-        $this->assertFileExists($this->getFilesystemStream('testOneLevelRequire/filename1.php'));
-        $this->assertFileNotExists($this->getFilesystemStream('testOneLevelRequire/test-999.php'));
+        $this->createFilesystem('testOneLevelRequire');
+
+        $this->assertFileExists($this->getFilesystemStream('index.php'));
+        $this->assertFileExists($this->getFilesystemStream('filename1.php'));
+        $this->assertFileNotExists($this->getFilesystemStream('test-999.php'));
     }
 }
