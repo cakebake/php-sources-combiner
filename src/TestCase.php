@@ -28,27 +28,14 @@ class TestCase extends \PHPUnit_Framework_TestCase
         if ($this->createTestFilesystem !== true)
             return false;
 
-        //one level, simple php
-        $this->createFilesystem('one_level', [
-            'index.php' => '<?php
-                //start file
-                echo "hello world!";
-                require dirname(__FILE__) . "/filename1.php";
-                require dirname(__FILE__) . "/filename2.php";
-                require dirname(__FILE__) . "/empty_file.php";
-                require dirname(__FILE__) . "/html.php";
-                require dirname(__FILE__) . "/plain.php";
-                echo "good bye!";
-            ',
-            'empty_dir' => [],
-            'filename1.php' => '<?php
-                echo "Filename1.php";
-            ',
-            'filename2.php' => '<?php echo "echo in first line...";',
-            'empty_file.php' => '       ',
-            'html.php' => '<div class="test">Test HTML</div>',
-            'plain.php' => 'Plain Text...',
-        ]);
+        $filesystem = glob(__DIR__ . '/../tests/filesystem/*.php');
+        if (!empty($filesystem)) {
+            foreach ($filesystem as $f) {
+                if (is_array(($structure = require $f)) && !empty($structure)) {
+                    $this->createFilesystem(pathinfo($f, PATHINFO_FILENAME), $structure);
+                }
+            }
+        }
     }
 
     /**
@@ -101,6 +88,12 @@ class TestCase extends \PHPUnit_Framework_TestCase
         return vfsStream::url($pointer);
     }
 
+    /**
+    * Check output file
+    *
+    * @param string $filename Path to filename
+    * @todo More quality checks
+    */
     public function assertFileHasNoErrors($filename)
     {
         $this->assertFileExists($filename);

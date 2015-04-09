@@ -6,27 +6,26 @@ class CombinePhpRequireTest extends cakebake\combiner\TestCase
 {
     public $createTestFilesystem = true;
 
-    public function testOneLevelIncludes()
+    public function testOneLevelRequire()
     {
-        $this->assertFileExists(($stream = $this->getFilesystemStream('one_level/index.php')));
-        $this->assertFileExists($this->getFilesystemStream('one_level/filename1.php'));
+        $this->assertFileExists(($stream = $this->getFilesystemStream('testOneLevelRequire/index.php')));
 
         $outputFilename = str_replace(array('::', ':', '\\'), '_', __METHOD__) . '.php';
 
         $combine = new PhpFileCombine([
-            'startFile' => $this->getFilesystemStream('one_level/index.php'),
+            'startFile' => $this->getFilesystemStream('testOneLevelRequire/index.php'),
             'outputDir' => $this->tmpDir,
             'outputFile' => $outputFilename,
-            'removeDebugInfo' => false,
-            'removeComments' => false,
+            'removeDebugInfo' => true,
+            'removeComments' => true,
         ]);
 
         $this->assertFileHasNoErrors($this->tmpDir . DIRECTORY_SEPARATOR . $outputFilename);
 
         $combinedFiles = $combine->getParsedFiles();
-        $this->assertTrue(isset($combinedFiles['vfs://one_level/index.php']));
-        $this->assertTrue(isset($combinedFiles['vfs://one_level/filename1.php']));
-        $this->assertTrue(isset($combinedFiles['vfs://one_level/filename2.php']));
-        $this->assertFalse(isset($combinedFiles['vfs://one_level/empty_file.php']));
+        $this->assertTrue(isset($combinedFiles['vfs://testOneLevelRequire/index.php']));
+        $this->assertTrue(isset($combinedFiles['vfs://testOneLevelRequire/filename1.php']));
+        $this->assertTrue(isset($combinedFiles['vfs://testOneLevelRequire/filename2.php']));
+        $this->assertFalse(isset($combinedFiles['vfs://testOneLevelRequire/empty_file.php']));
     }
 }
