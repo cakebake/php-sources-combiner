@@ -41,6 +41,7 @@ class CombinePhpRequireTest extends cakebake\combiner\TestCase
 
         $this->assertFileExists($this->getFilesystemStream('index.php'));
         $this->assertFileExists($this->getFilesystemStream('dir/level-2.php'));
+        $this->assertFileExists($this->getFilesystemStream('dir/../level-1.php'));
 
         $outputFilename = self::sanitizeFilename(__METHOD__ . '.php');
 
@@ -70,6 +71,8 @@ class CombinePhpRequireTest extends cakebake\combiner\TestCase
 
         $this->assertFileExists($this->getFilesystemStream('index.php'));
         $this->assertFileExists($this->getFilesystemStream('dir/level-2.php'));
+        $this->assertFileExists($this->getFilesystemStream('dir/dir-level-2/level-3.php'));
+        $this->assertFileExists($this->getFilesystemStream('dir/level-2-2.php'));
 
         $outputFilename = self::sanitizeFilename(__METHOD__ . '.php');
 
@@ -77,7 +80,7 @@ class CombinePhpRequireTest extends cakebake\combiner\TestCase
             'startFile' => $this->getFilesystemStream('index.php'),
             'outputDir' => $this->tmpDir,
             'outputFile' => $outputFilename,
-            'removeDebugInfo' => false,
+            'removeDebugInfo' => true,
             'removeComments' => false,
         ]);
 
@@ -87,6 +90,10 @@ class CombinePhpRequireTest extends cakebake\combiner\TestCase
         $this->assertTrue(isset($combinedFiles['vfs://test3LevelRequire/index.php']));
         $this->assertTrue(isset($combinedFiles['vfs://test3LevelRequire/dir/level-2.php']));
         $this->assertTrue(isset($combinedFiles['vfs://test3LevelRequire/html.php']));
+        $this->assertTrue(isset($combinedFiles['vfs://test3LevelRequire/dir/dir-level-2/level-3.php']));
+        $this->assertTrue(isset($combinedFiles['vfs://test3LevelRequire/dir/dir-level-2/../../filename1.php']));
         $this->assertTrue(isset($combinedFiles['vfs://test3LevelRequire/dir/../level-1.php']), 'Level 1 File included from level 2 is missing');
+        $this->assertTrue(isset($combinedFiles['vfs://test3LevelRequire/dir/dir-level-2/../level-2-2.php']), 'Level 2 File included from level 3 is missing');
     }
+
 }
