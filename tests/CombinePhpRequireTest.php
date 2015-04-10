@@ -7,9 +7,9 @@ class CombinePhpRequireTest extends cakebake\combiner\TestCase
     /**
     * Require level 1
     */
-    public function testOneLevelRequire()
+    public function test1LevelRequire()
     {
-        $this->createFilesystem('testOneLevelRequire');
+        $this->createFilesystem('test1LevelRequire');
 
         $this->assertFileExists($this->getFilesystemStream('index.php'));
 
@@ -26,18 +26,18 @@ class CombinePhpRequireTest extends cakebake\combiner\TestCase
         $this->assertFileHasNoErrors($this->tmpDir . DIRECTORY_SEPARATOR . $outputFilename);
 
         $combinedFiles = $combine->getParsedFiles();
-        $this->assertTrue(isset($combinedFiles['vfs://testOneLevelRequire/index.php']));
-        $this->assertTrue(isset($combinedFiles['vfs://testOneLevelRequire/filename1.php']));
-        $this->assertTrue(isset($combinedFiles['vfs://testOneLevelRequire/filename2.php']));
-        $this->assertFalse(isset($combinedFiles['vfs://testOneLevelRequire/empty_file.php']));
+        $this->assertTrue(isset($combinedFiles['vfs://test1LevelRequire/index.php']));
+        $this->assertTrue(isset($combinedFiles['vfs://test1LevelRequire/filename1.php']));
+        $this->assertTrue(isset($combinedFiles['vfs://test1LevelRequire/filename2.php']));
+        $this->assertFalse(isset($combinedFiles['vfs://test1LevelRequire/empty_file.php']));
     }
 
     /**
     * Require level 2
     */
-    public function testTwoLevelsRequire()
+    public function test2LevelsRequire()
     {
-        $this->createFilesystem('testTwoLevelRequire');
+        $this->createFilesystem('test2LevelsRequire');
 
         $this->assertFileExists($this->getFilesystemStream('index.php'));
         $this->assertFileExists($this->getFilesystemStream('dir/level-2.php'));
@@ -55,10 +55,38 @@ class CombinePhpRequireTest extends cakebake\combiner\TestCase
         $this->assertFileHasNoErrors($this->tmpDir . DIRECTORY_SEPARATOR . $outputFilename);
 
         $combinedFiles = $combine->getParsedFiles();
-        //DebugBreak();
-        $this->assertTrue(isset($combinedFiles['vfs://testTwoLevelRequire/index.php']));
-        $this->assertTrue(isset($combinedFiles['vfs://testTwoLevelRequire/dir/level-2.php']));
-        $this->assertTrue(isset($combinedFiles['vfs://testTwoLevelRequire/html.php']));
-        $this->assertTrue(isset($combinedFiles['vfs://testTwoLevelRequire/dir/../level-1.php']), 'Level 1 File included from level 2 is missing');
+        $this->assertTrue(isset($combinedFiles['vfs://test2LevelsRequire/index.php']));
+        $this->assertTrue(isset($combinedFiles['vfs://test2LevelsRequire/dir/level-2.php']));
+        $this->assertTrue(isset($combinedFiles['vfs://test2LevelsRequire/html.php']));
+        $this->assertTrue(isset($combinedFiles['vfs://test2LevelsRequire/dir/../level-1.php']), 'Level 1 File included from level 2 is missing');
+    }
+
+    /**
+    * Require level 3
+    */
+    public function test3LevelRequire()
+    {
+        $this->createFilesystem('test3LevelRequire');
+
+        $this->assertFileExists($this->getFilesystemStream('index.php'));
+        $this->assertFileExists($this->getFilesystemStream('dir/level-2.php'));
+
+        $outputFilename = self::sanitizeFilename(__METHOD__ . '.php');
+
+        $combine = new PhpFileCombine([
+            'startFile' => $this->getFilesystemStream('index.php'),
+            'outputDir' => $this->tmpDir,
+            'outputFile' => $outputFilename,
+            'removeDebugInfo' => false,
+            'removeComments' => false,
+        ]);
+
+        $this->assertFileHasNoErrors($this->tmpDir . DIRECTORY_SEPARATOR . $outputFilename);
+
+        $combinedFiles = $combine->getParsedFiles();
+        $this->assertTrue(isset($combinedFiles['vfs://test3LevelRequire/index.php']));
+        $this->assertTrue(isset($combinedFiles['vfs://test3LevelRequire/dir/level-2.php']));
+        $this->assertTrue(isset($combinedFiles['vfs://test3LevelRequire/html.php']));
+        $this->assertTrue(isset($combinedFiles['vfs://test3LevelRequire/dir/../level-1.php']), 'Level 1 File included from level 2 is missing');
     }
 }
