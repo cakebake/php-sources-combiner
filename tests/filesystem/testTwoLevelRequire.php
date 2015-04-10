@@ -10,8 +10,10 @@ return [
         require dirname(__FILE__) . "/filename2.php";
         echo "level 1";
         require dirname(__FILE__) . "/empty_file.php";
-        //require level 2
+        //require level 2 twice
         require dirname(__FILE__) . "/dir/level-2.php";
+        require dirname(__FILE__) . "/dir/level-2.php";
+        //end require level 2 twice
         //require level 1
         require dirname(__FILE__) . "/html.php";
         require dirname(__FILE__) . "/plain.php";

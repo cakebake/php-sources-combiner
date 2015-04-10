@@ -5,7 +5,15 @@ return [
     'index.php' => '<?php
         //start file
         echo "hello world!";
+
+        //require `filename1.php` 5x
         require dirname(__FILE__) . "/filename1.php";
+        require dirname(__FILE__) . "/filename1.php";
+        require dirname(__FILE__) . "/filename1.php";
+        require dirname(__FILE__) . "/filename1.php";
+        require dirname(__FILE__) . "/filename1.php";
+        //end `filename1.php` 5x
+
         require dirname(__FILE__) . "/filename2.php";
         require dirname(__FILE__) . "/empty_file.php";
         require dirname(__FILE__) . "/html.php";
