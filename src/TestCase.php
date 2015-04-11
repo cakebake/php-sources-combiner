@@ -107,4 +107,47 @@ class TestCase extends \PHPUnit_Framework_TestCase
 
         return $filename;
     }
+
+    /**
+    * Build recursive tree
+    *
+    * @param mixed $value
+    * @param mixed $key
+    * @param mixed $params
+    * @param mixed $structure
+    * @param mixed $depthLimit
+    * @param mixed $subKey
+    * @param mixed $level
+    */
+    public function interlaceTree(&$value, &$key, array $params = [], array $structure = [], $depthLimit = 2, $subKey = 'level', $level = 1)
+    {
+        extract($params);
+
+        if ($value == 'SUBDIR') {
+            $value = [
+                'index.php' => '<?php ' . PHP_EOL . '//exit at level-' . ($depthLimit + 1) . PHP_EOL,
+            ];
+            if ($level < $depthLimit) {
+                $oldLevel = $level;
+                $level++;
+
+                $value = [];
+                foreach ($structure as $k => $v) {
+                    $k = str_replace("{$subKey}-{$oldLevel}", "{$subKey}-{$level}", $k);
+                    $v = str_replace("{$subKey}-{$oldLevel}", "{$subKey}-{$level}", $v);
+                    $value[$k] = $v;
+                }
+
+                array_walk_recursive(
+                    $value,
+                    array(&$this, 'interlaceTree'),
+                    [
+                        'structure' => $value,
+                        'depthLimit' => $depthLimit,
+                        'level' => $level,
+                    ]
+                );
+            }
+        }
+    }
 }
