@@ -81,7 +81,7 @@ class PhpFileCombine extends \PhpParser\PrettyPrinter\Standard
     protected function getParser()
     {
         if ($this->_parser === null) {
-            $this->_parser = new \PhpParser\Parser(new \PhpParser\Lexer);
+            $this->_parser = new \PhpParser\Parser(new \PhpParser\Lexer\Emulative);
         }
 
         return $this->_parser;
