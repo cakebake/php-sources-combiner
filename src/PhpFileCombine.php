@@ -127,7 +127,7 @@ class PhpFileCombine extends \PhpParser\PrettyPrinter\Standard
             \PhpParser\Node\Expr\Include_::TYPE_REQUIRE_ONCE => 'require_once',
         ];
 
-        $file = $this->getIncludeValue($node->expr, [
+        $file = self::getIncludeValue($node->expr, [
             '__DIR__' => dirname($this->_currentFile),
             '__FILE__' => $this->_currentFile,
         ]);
@@ -154,7 +154,7 @@ class PhpFileCombine extends \PhpParser\PrettyPrinter\Standard
         return $code . '# --- END';
     }
 
-    public function getIncludeValue($node, array $constants = [])
+    public static function getIncludeValue($node, array $constants = [])
     {
         $nodeClass = get_class($node);
 
