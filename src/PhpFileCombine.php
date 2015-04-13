@@ -18,17 +18,13 @@ class PhpFileCombine
     private $_currentFile = null;
     private $_outFile = null;
     private $_parsedFiles = [];
-    private $_orgCode = null;
-    private $_prettyCode = null;
-    private $_stmts = [];
     private $_parser = null;
     private $_traverser = null;
     private $_prettyPrinter = null;
-
     private static $_self = null;
 
     /**
-    * Static constructor
+    * Static class constructor
     */
     public static function init()
     {
@@ -39,61 +35,42 @@ class PhpFileCombine
     * Write the output file
     *
     * @param string $filename
-    * @param string $code
-    * @return PhpFileCombine
+    * @param string $prettyCode
+    * @return PhpFileCombine|false Object or false on write failure
     */
-    public function writeFile($filename = null, $code = null)
+    public function writeFile($filename, $prettyCode = null)
     {
-        if ($filename !== null) {
-            $this->_outFile = $filename;
-        }
-        if ($code !== null) {
-            $this->_prettyCode = $code;
+        $this->setOutputFile($filename);
+
+        if ($prettyCode !== null) {
+            $this->setPrettyCode($prettyCode);
         }
 
-        file_put_contents($this->getOutputFile(), $this->getPrettyCode(), LOCK_EX);
-        $this->updateParsedFilesStorage();
-
-        return $this;
+        return (@file_put_contents($this->getOutputFile(), $this->getPrettyCode(), LOCK_EX) !== false) ? $this : false;
     }
 
     /**
     * Pretty prints the stmts tree
     *
     * @param bool $finalPrint Adds php tags
-    * @param array $stmts
+    * @param array $stmts Stmts tree
     * @return PhpFileCombine
     */
     public function prettyPrint($finalPrint = false, array $stmts = [])
     {
         if (!empty($stmts)) {
-            $this->_stmts = $stmts;
+            $this->setStmts($stmts);
         }
 
         if ($finalPrint === true) {
-            $this->_prettyCode = $this->getPrettyPrinter()->prettyPrintFile($this->getStmts());
+            $code = $this->setPrettyCode($this->getPrettyPrinter()->prettyPrintFile($this->getStmts()));
         } else {
-            $this->_prettyCode = $this->getPrettyPrinter()->prettyPrint($this->getStmts());
+            $code = $this->setPrettyCode($this->getPrettyPrinter()->prettyPrint($this->getStmts()));
         }
 
-        $this->_prettyCode = $this->cleanCode($this->_prettyCode);
-        $this->updateParsedFilesStorage();
+        $this->setPrettyCode($this->cleanCode($code));
 
         return $this;
-    }
-
-    /**
-    * Clean some code
-    *
-    * @param string $code
-    */
-    protected function cleanCode($code)
-    {
-        /*$code = preg_replace("/(<\?php|\?>)([\s]?|[\s\t]*|[\r\n]*|[\r\n]+)*(\?>|<\?php)/", PHP_EOL, $code); //remove empty php tags*/
-        $code = preg_replace("/(^[\r\n]*|[\r\n]+)[\s\t]*[\r\n]+/", PHP_EOL, $code); //remove empty lines
-        $code = trim($code);
-
-        return $code;
     }
 
     /**
@@ -102,21 +79,18 @@ class PhpFileCombine
     * @param string $file
     * @return PhpFileCombine
     */
-    public function parseFile($file = null)
+    public function parseFile($file)
     {
-        $file = ($file !== null) ? $file : $this->_currentFile;
-
         if (($orgCode = @trim(@file_get_contents($file))) === false ||
             empty($orgCode)) {
 
             return false;
         }
 
-        $this->_currentFile = $file;
-        $this->_orgCode = $orgCode;
-        $this->updateParsedFilesStorage();
+        $this->setCurrentFile($file);
+        $this->parse($orgCode);
 
-        return $this->parse($this->getOrgCode());
+        return $this;
     }
 
     /**
@@ -125,17 +99,10 @@ class PhpFileCombine
     * @param string $code
     * @return PhpFileCombine
     */
-    public function parse($code = null)
+    public function parse($code)
     {
-        if (trim($code) == '')
-            return false;
-
-        if ($code !== null) {
-            $this->_orgCode = $code;
-        }
-
-        $this->_stmts = $this->getParser()->parse($this->getOrgCode());
-        $this->updateParsedFilesStorage();
+        $this->setOrgCode($code);
+        $this->setStmts($this->getParser()->parse($code));
 
         return $this;
     }
@@ -149,11 +116,10 @@ class PhpFileCombine
     public function traverse(array $stmts = [])
     {
         if (!empty($stmts)) {
-            $this->_stmts = $stmts;
+            $this->setStmts($stmts);
         }
 
-        $this->_stmts = $this->getTraverser()->traverse($this->getStmts());
-        $this->updateParsedFilesStorage();
+        $this->setStmts($this->getTraverser()->traverse($this->getStmts()));
 
         return $this;
     }
@@ -168,6 +134,17 @@ class PhpFileCombine
     }
 
     /**
+    * Set current file path
+    *
+    * @param string $currentFile
+    */
+    public function setCurrentFile($value, $storage = null)
+    {
+        $this->_currentFile = $value;
+        $this->setParserData('orgFile', $value, $storage);
+    }
+
+    /**
     * Get output file
     * @return string
     */
@@ -177,42 +154,80 @@ class PhpFileCombine
     }
 
     /**
-    * Get stmts tree
-    * @return array Stmts tree
+    * Set global output file
+    *
+    * @param string $value
     */
-    public function getStmts()
+    public function setOutputFile($value)
     {
-        return $this->_stmts;
+        return $this->_outFile = $value;
     }
 
     /**
-    * Get original code
+    * Get stmts tree
+    * @return array Stmts tree
+    */
+    public function getStmts($storage = null)
+    {
+        return $this->getParserData($storage)['stmts'];
+    }
+
+    /**
+    * Set stmts tree to storage
+    *
+    * @param array $value
+    * @param string $storage
+    */
+    public function setStmts(array $value, $storage = null)
+    {
+        return $this->setParserData('stmts', $value, $storage);
+    }
+
+    /**
+    * Get original code from storage
+    *
     * @return string
     */
-    public function getOrgCode()
+    public function getOrgCode($storage = null)
     {
-        return $this->_orgCode;
+        return $this->getParserData($storage)['orgCode'];
+    }
+
+    /**
+    * Set original code to storage
+    *
+    * @param string $orgCode
+    */
+    public function setOrgCode($value, $storage = null)
+    {
+        return $this->setParserData('orgCode', $value, $storage);
     }
 
     /**
     * Get pretty code
+    *
     * @return string
     */
-    public function getPrettyCode()
+    public function getPrettyCode($storage = null)
     {
-        return $this->_prettyCode;
+        return $this->getParserData($storage)['prettyCode'];
     }
-    
+
+    public function setPrettyCode($value, $storage = null)
+    {
+        return $this->setParserData('prettyCode', $value, $storage);
+    }
+
     /**
     * Get file key
-    * 
+    *
     * @param mixed $filePath
     */
     public function getFileKey($filePath = null)
     {
         $filePath = ($filePath !== null) ? $filePath : $this->getCurrentFile();
-        
-        return (($md5 = md5_file($filePath)) !== false) ? $md5 : $filePath;
+
+        return (($md5 = @md5_file($filePath)) !== false) ? $md5 : $filePath;
     }
 
     /**
@@ -246,13 +261,13 @@ class PhpFileCombine
 
     /**
     * Set current parser info
-    * 
+    *
     * @param string $key
     * @param mixed $value
     * @param string $storage Specific file path, defaults to null for current file
     * @return value
     */
-    protected function setParserData($key, $value, $storage = null)
+    public function setParserData($key, $value, $storage = null)
     {
         $storage = $this->getFileKey($storage);
 
@@ -314,10 +329,11 @@ class PhpFileCombine
 
     /**
     * Updates parsed files storage with current parsing info
+    * @property $filePath string current file path
     */
-    protected function updateParsedFilesStorage()
+    protected function updateParsedFilesStorage($filePath = null)
     {
-        $key = $this->getFileKey();
+        $key = $this->getFileKey($filePath);
         $this->_parsedFiles[$key] = array_merge(
             isset($this->_parsedFiles[$key]) ? $this->_parsedFiles[$key] : [],
             [
@@ -326,6 +342,20 @@ class PhpFileCombine
                 'stmts_tree' => $this->getStmts(),
             ]
         );
+    }
+
+    /**
+    * Clean some code
+    *
+    * @param string $code
+    */
+    protected function cleanCode($code)
+    {
+        /*$code = preg_replace("/(<\?php|\?>)([\s]?|[\s\t]*|[\r\n]*|[\r\n]+)*(\?>|<\?php)/", PHP_EOL, $code); //remove empty php tags*/
+        $code = preg_replace("/(^[\r\n]*|[\r\n]+)[\s\t]*[\r\n]+/", PHP_EOL, $code); //remove empty lines
+        $code = trim($code);
+
+        return $code;
     }
 
     /**
