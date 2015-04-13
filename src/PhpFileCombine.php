@@ -202,20 +202,30 @@ class PhpFileCombine
     {
         return $this->_prettyCode;
     }
+    
+    /**
+    * Get file key
+    * 
+    * @param mixed $filePath
+    */
+    public function getFileKey($filePath = null)
+    {
+        $filePath = ($filePath !== null) ? $filePath : $this->getCurrentFile();
+        
+        return (($md5 = md5_file($filePath)) !== false) ? $md5 : $filePath;
+    }
 
     /**
     * Get parsed files storage; all or for specific file
     *
-    * @param mixed $key Specific file path, defaults to null for current file
+    * @param mixed $filePath Specific file path, defaults to null for current file
     * @param bool $getAll Get all or specific
     * @return array|null
     */
-    public function getParserData($key = null, $getAll = false)
+    public function getParserData($filePath = null, $getAll = false)
     {
         if ($getAll === false) {
-            if (empty($key)) {
-                $key = $this->getCurrentFile();
-            }
+            $key = $this->getFileKey($filePath);
 
             return $this->isParsed($key) ? $this->_parsedFiles[$key] : null;
         }
@@ -225,22 +235,26 @@ class PhpFileCombine
 
     /**
     * Check if parser info exists
+    * @param mixed $filePath Specific file path, defaults to null for current file
     */
-    public function isParsed($key = null)
+    public function isParsed($filePath = null)
     {
-        if ($key === null) {
-            $key = $this->getCurrentFile();
-        }
+        $key = $this->getFileKey($filePath);
 
         return isset($this->_parsedFiles[$key]);
     }
 
     /**
     * Set current parser info
+    * 
+    * @param string $key
+    * @param mixed $value
+    * @param string $storage Specific file path, defaults to null for current file
+    * @return value
     */
     protected function setParserData($key, $value, $storage = null)
     {
-        $storage = ($storage == null) ? $this->getCurrentFile() : $storage;
+        $storage = $this->getFileKey($storage);
 
         if (!isset($this->_parsedFiles[$storage])) {
             $this->_parsedFiles[$storage] = [];
@@ -303,8 +317,9 @@ class PhpFileCombine
     */
     protected function updateParsedFilesStorage()
     {
-        $this->_parsedFiles[$this->getCurrentFile()] = array_merge(
-            isset($this->_parsedFiles[$this->getCurrentFile()]) ? $this->_parsedFiles[$this->getCurrentFile()] : [],
+        $key = $this->getFileKey();
+        $this->_parsedFiles[$key] = array_merge(
+            isset($this->_parsedFiles[$key]) ? $this->_parsedFiles[$key] : [],
             [
                 'current_file' => $this->getCurrentFile(),
                 'original_code' => $this->getOrgCode(),
