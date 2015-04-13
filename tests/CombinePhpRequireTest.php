@@ -15,8 +15,7 @@ class CombinePhpRequireTest extends cakebake\combiner\TestCase
 
         $startFile = $this->getFilesystemStream('index.php');
         $outPath = $this->tmpDir . '/' . self::sanitizeFilename(__METHOD__ . '.php');
-        $combine = new PhpFileCombine;
-        $combine = $combine->parseFile($startFile)->traverse()->prettyPrint(true)->writeFile($outPath);
+        $combine = PhpFileCombine::init()->parseFile($startFile)->traverse()->prettyPrint(true)->writeFile($outPath);
 
         $this->assertFileHasNoErrors($outPath);
 

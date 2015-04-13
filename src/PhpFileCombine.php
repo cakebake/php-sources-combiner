@@ -9,6 +9,10 @@ use PhpParser\NodeTraverser;
 use cakebake\combiner\NodeVisitor\IncludeNodeVisitor;
 use Exception;
 
+/**
+* PhpFileCombine
+* @example PhpFileCombine::init()->parseFile($startFile)->traverse()->prettyPrint(true)->writeFile($outPath);
+*/
 class PhpFileCombine
 {
     private $_currentFile = null;
@@ -21,6 +25,23 @@ class PhpFileCombine
     private $_traverser = null;
     private $_prettyPrinter = null;
 
+    private static $_self = null;
+
+    /**
+    * Static constructor
+    */
+    public static function init()
+    {
+        return self::createInstance();
+    }
+
+    /**
+    * Write the output file
+    *
+    * @param string $filename
+    * @param string $code
+    * @return PhpFileCombine
+    */
     public function writeFile($filename = null, $code = null)
     {
         if ($filename !== null) {
@@ -270,6 +291,14 @@ class PhpFileCombine
     }
 
     /**
+    * Returns current class name
+    */
+    public static function getClassName()
+    {
+        return __CLASS__;
+    }
+
+    /**
     * Updates parsed files storage with current parsing info
     */
     protected function updateParsedFilesStorage()
@@ -282,5 +311,18 @@ class PhpFileCombine
                 'stmts_tree' => $this->getStmts(),
             ]
         );
+    }
+
+    /**
+    * Create class instance
+    */
+    protected static function createInstance()
+    {
+        if (self::$_self === null) {
+            $class = self::getClassName();
+            self::$_self = new $class;
+        }
+
+        return self::$_self;
     }
 }
