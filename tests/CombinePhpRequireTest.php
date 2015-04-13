@@ -13,23 +13,17 @@ class CombinePhpRequireTest extends cakebake\combiner\TestCase
 
         $this->assertFileExists($this->getFilesystemStream('index.php'));
 
-        $outputFilename = self::sanitizeFilename(__METHOD__ . '.php');
+        $startFile = $this->getFilesystemStream('index.php');
+        $outPath = $this->tmpDir . '/' . self::sanitizeFilename(__METHOD__ . '.php');
+        $combine = new PhpFileCombine;
+        $combine = $combine->parseFile($startFile)->traverse()->prettyPrint(true)->writeFile($outPath);
 
-        $combine = new PhpFileCombine([
-            'startFile' => $this->getFilesystemStream('index.php'),
-            'outputDir' => $this->tmpDir,
-            'outputFile' => $outputFilename,
-            'removeDebugInfo' => true,
-            'removeComments' => true,
-        ]);
+        $this->assertFileHasNoErrors($outPath);
 
-        $this->assertFileHasNoErrors($this->tmpDir . DIRECTORY_SEPARATOR . $outputFilename);
-
-        $combinedFiles = $combine->getParsedFiles();
-        $this->assertTrue(isset($combinedFiles['vfs://test1LevelRequire/index.php']));
-        $this->assertTrue(isset($combinedFiles['vfs://test1LevelRequire/filename1.php']));
-        $this->assertTrue(isset($combinedFiles['vfs://test1LevelRequire/filename2.php']));
-        $this->assertFalse(isset($combinedFiles['vfs://test1LevelRequire/empty_file.php']));
+        $this->assertTrue($combine->isParsed('vfs://test1LevelRequire/index.php'));
+        $this->assertTrue($combine->isParsed('vfs://test1LevelRequire/filename1.php'));
+        $this->assertTrue($combine->isParsed('vfs://test1LevelRequire/filename2.php'));
+        $this->assertFalse($combine->isParsed('vfs://test1LevelRequire/empty_file.php'), 'Empty files should not be parsed!');
     }
 
     /**

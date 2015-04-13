@@ -2,210 +2,285 @@
 
 namespace cakebake\combiner;
 
+use PhpParser\Parser;
+use PhpParser\Lexer\Emulative as LexerEmulative;
+use PhpParser\PrettyPrinter\Standard as PrettyPrinter;
+use PhpParser\NodeTraverser;
+use cakebake\combiner\NodeVisitor\IncludeNodeVisitor;
 use Exception;
 
-class PhpFileCombine extends \PhpParser\PrettyPrinter\Standard
+class PhpFileCombine
 {
-    protected $startFile = null;
-
-    protected $outputDir = null;
-
-    protected $outputFile = 'combined.php';
-
-    protected $removeComments = false;
-
-    protected $removeDebugInfo = false;
-
-    private $_parser = null;
-
     private $_currentFile = null;
-
+    private $_outFile = null;
     private $_parsedFiles = [];
+    private $_orgCode = null;
+    private $_prettyCode = null;
+    private $_stmts = [];
+    private $_parser = null;
+    private $_traverser = null;
+    private $_prettyPrinter = null;
 
-    /**
-    * Combines the start file with its includes and namespaces
-    * @return object cakebake\combiner\PhpFileCombine
-    */
-    public function __construct(array $conf) {
-        parent::__construct();
-        $this->setConfiguration($conf);
-        $this->combine();
-    }
-
-    /**
-    * Returns all parsed files informations (startfile, includes, requires, ...)
-    * @return array Parsed files indexed by file path with value: ['fileContent' => 'Org code', 'tree' => 'Syntax tree from php parser', 'code' => 'Pretty printed code']
-    */
-    public function getParsedFiles()
+    public function writeFile($filename = null, $code = null)
     {
-        return $this->_parsedFiles;
-    }
-
-    protected function combine()
-    {
-        $code = '<?php' . PHP_EOL . $this->cleanCode($this->parseFile($this->startFile));
-
-        return (file_put_contents($this->outputDir . DIRECTORY_SEPARATOR . $this->outputFile, $code, LOCK_EX) !== false) ? true : false;
-    }
-
-    protected function parseFile($file)
-    {
-        if (($fileContent = @trim(@file_get_contents($file))) === false ||
-            empty($fileContent)) {
-            return null;
+        if ($filename !== null) {
+            $this->_outFile = $filename;
+        }
+        if ($code !== null) {
+            $this->_prettyCode = $code;
         }
 
-        if (isset($this->_parsedFiles[$file]))
-            return $this->_parsedFiles[$file]['code'];
+        file_put_contents($this->getOutputFile(), $this->getPrettyCode(), LOCK_EX);
+        $this->updateParsedFilesStorage();
 
-        $this->_parsedFiles[$file] = [
-            'fileContent' => $fileContent,
-            'tree' => null,
-            'code' => null,
-        ];
+        return $this;
+    }
 
-        $tree = $this->_parsedFiles[$file]['tree'] = $this->getParser()->parse($fileContent);
+    /**
+    * Pretty prints the stmts tree
+    *
+    * @param bool $finalPrint Adds php tags
+    * @param array $stmts
+    * @return PhpFileCombine
+    */
+    public function prettyPrint($finalPrint = false, array $stmts = [])
+    {
+        if (!empty($stmts)) {
+            $this->_stmts = $stmts;
+        }
 
-//        if (isset($tree[0]) && ($tree[0] instanceof \PhpParser\Node\Stmt\Namespace_) === false) {
-//            $tree = [new \PhpParser\Node\Stmt\Namespace_(null, $tree)];
-//        }
+        if ($finalPrint === true) {
+            $this->_prettyCode = $this->getPrettyPrinter()->prettyPrintFile($this->getStmts());
+        } else {
+            $this->_prettyCode = $this->getPrettyPrinter()->prettyPrint($this->getStmts());
+        }
 
-        $lastFile = $this->_currentFile;
-        $this->_currentFile = $file;
-        $code = $this->_parsedFiles[$file]['code'] = $this->prettyPrint($tree);
-        $this->_currentFile = $lastFile;
+        $this->_prettyCode = $this->cleanCode($this->_prettyCode);
+        $this->updateParsedFilesStorage();
+
+        return $this;
+    }
+
+    /**
+    * Clean some code
+    *
+    * @param string $code
+    */
+    protected function cleanCode($code)
+    {
+        /*$code = preg_replace("/(<\?php|\?>)([\s]?|[\s\t]*|[\r\n]*|[\r\n]+)*(\?>|<\?php)/", PHP_EOL, $code); //remove empty php tags*/
+        $code = preg_replace("/(^[\r\n]*|[\r\n]+)[\s\t]*[\r\n]+/", PHP_EOL, $code); //remove empty lines
+        $code = trim($code);
 
         return $code;
     }
 
-    protected function getParser()
+    /**
+    * Stmts tree setter from file
+    *
+    * @param string $file
+    * @return PhpFileCombine
+    */
+    public function parseFile($file = null)
+    {
+        $file = ($file !== null) ? $file : $this->_currentFile;
+
+        if (($orgCode = @trim(@file_get_contents($file))) === false ||
+            empty($orgCode)) {
+
+            return false;
+        }
+
+        $this->_currentFile = $file;
+        $this->_orgCode = $orgCode;
+        $this->updateParsedFilesStorage();
+
+        return $this->parse($this->getOrgCode());
+    }
+
+    /**
+    * Stmts tree setter from code
+    *
+    * @param string $code
+    * @return PhpFileCombine
+    */
+    public function parse($code = null)
+    {
+        if (trim($code) == '')
+            return false;
+
+        if ($code !== null) {
+            $this->_orgCode = $code;
+        }
+
+        $this->_stmts = $this->getParser()->parse($this->getOrgCode());
+        $this->updateParsedFilesStorage();
+
+        return $this;
+    }
+
+    /**
+    * Traverse stmts tree
+    *
+    * @param array $stmts
+    * @return PhpFileCombine
+    */
+    public function traverse(array $stmts = [])
+    {
+        if (!empty($stmts)) {
+            $this->_stmts = $stmts;
+        }
+
+        $this->_stmts = $this->getTraverser()->traverse($this->getStmts());
+        $this->updateParsedFilesStorage();
+
+        return $this;
+    }
+
+    /**
+    * Get current file
+    * @return string
+    */
+    public function getCurrentFile()
+    {
+        return $this->_currentFile;
+    }
+
+    /**
+    * Get output file
+    * @return string
+    */
+    public function getOutputFile()
+    {
+        return $this->_outFile;
+    }
+
+    /**
+    * Get stmts tree
+    * @return array Stmts tree
+    */
+    public function getStmts()
+    {
+        return $this->_stmts;
+    }
+
+    /**
+    * Get original code
+    * @return string
+    */
+    public function getOrgCode()
+    {
+        return $this->_orgCode;
+    }
+
+    /**
+    * Get pretty code
+    * @return string
+    */
+    public function getPrettyCode()
+    {
+        return $this->_prettyCode;
+    }
+
+    /**
+    * Get parsed files storage; all or for specific file
+    *
+    * @param mixed $key Specific file path, defaults to null for current file
+    * @param bool $getAll Get all or specific
+    * @return array|null
+    */
+    public function getParserData($key = null, $getAll = false)
+    {
+        if ($getAll === false) {
+            if (empty($key)) {
+                $key = $this->getCurrentFile();
+            }
+
+            return $this->isParsed($key) ? $this->_parsedFiles[$key] : null;
+        }
+
+        return !empty($this->_parsedFiles) ? $this->_parsedFiles : null;
+    }
+
+    /**
+    * Check if parser info exists
+    */
+    public function isParsed($key = null)
+    {
+        if ($key === null) {
+            $key = $this->getCurrentFile();
+        }
+
+        return isset($this->_parsedFiles[$key]);
+    }
+
+    /**
+    * Set current parser info
+    */
+    protected function setParserData($key, $value, $storage = null)
+    {
+        $storage = ($storage == null) ? $this->getCurrentFile() : $storage;
+
+        if (!isset($this->_parsedFiles[$storage])) {
+            $this->_parsedFiles[$storage] = [];
+        }
+
+        return $this->_parsedFiles[$storage][$key] = $value;
+    }
+
+    /**
+    * Get parser
+    * @return \PhpParser\Parser
+    */
+    public function getParser()
     {
         if ($this->_parser === null) {
-            $this->_parser = new \PhpParser\Parser(new \PhpParser\Lexer\Emulative);
+            $this->_parser = new Parser(new LexerEmulative);
         }
 
         return $this->_parser;
     }
 
     /**
-    * Set configuration propertys
-    *
-    * @param array $conf
+    * Get node traverser and its visitors
+    * @return \PhpParser\NodeTraverser
     */
-    protected function setConfiguration(array $conf)
+    public function getTraverser()
     {
-        foreach ($conf as $k => $i) {
-            if (property_exists($this, $k)) {
-                if (empty($i) && !is_bool($i))
-                    throw new Exception("Missing \"$k\" configuration property.");
-
-                if (preg_match('/path|dir|startFile/i', $k) && !@file_exists($i))
-                    throw new Exception("File path \"$i\" does not exist. Please check your configuration related to \"$k\" property.");
-
-                $this->{$k} = $conf[$k];
-            }
+        if ($this->_traverser === null) {
+            $this->_traverser = new NodeTraverser;
         }
+
+        $this->_traverser->addVisitor(new IncludeNodeVisitor($this));
+
+        return $this->_traverser;
     }
 
     /**
-    * @inheritdoc
+    * Get pretty printer
+    * @return \PhpParser\PrettyPrinter\Standard
     */
-    public function pComments(array $comments)
+    public function getPrettyPrinter()
     {
-        return ($this->removeComments === true) ? null : parent::pComments($comments);
+        if ($this->_prettyPrinter === null) {
+            $this->_prettyPrinter = new PrettyPrinter;
+        }
+
+        return $this->_prettyPrinter;
     }
 
     /**
-    * @inheritdoc
+    * Updates parsed files storage with current parsing info
     */
-    public function pExpr_Include(\PhpParser\Node\Expr\Include_ $node)
+    protected function updateParsedFilesStorage()
     {
-        static $map = [
-            \PhpParser\Node\Expr\Include_::TYPE_INCLUDE      => 'include',
-            \PhpParser\Node\Expr\Include_::TYPE_INCLUDE_ONCE => 'include_once',
-            \PhpParser\Node\Expr\Include_::TYPE_REQUIRE      => 'require',
-            \PhpParser\Node\Expr\Include_::TYPE_REQUIRE_ONCE => 'require_once',
-        ];
-
-        $file = self::getIncludeValue($node->expr, [
-            '__DIR__' => dirname($this->_currentFile),
-            '__FILE__' => $this->_currentFile,
-        ]);
-
-        if (empty($file) || !file_exists($file)) {
-            throw new Exception("{$map[$node->type]} file \"$file\" not found in \"{$this->_currentFile}\" line {$node->getLine()}.");
-        }
-
-        if ($node->type == \PhpParser\Node\Expr\Include_::TYPE_INCLUDE_ONCE ||
-            $node->type == \PhpParser\Node\Expr\Include_::TYPE_REQUIRE_ONCE) {
-
-            if (isset($this->_parsedFiles[$file]) || $this->_currentFile == $file)
-                return null;
-        }
-
-        $code = '';
-        if (($parsed = $this->parseFile($file)) !== null) {
-            $code .= ($this->removeDebugInfo !== true) ? "#" . PHP_EOL . "# --- START {$map[$node->type]}('$file') in \"{$this->_currentFile}\" line {$node->getLine()} ---" . PHP_EOL . "#" . PHP_EOL : null;
-            $code .= $parsed;
-            $code .= ($this->removeDebugInfo !== true) ? PHP_EOL : '';
-
-        }
-
-        return $code . '# --- END';
-    }
-
-    public static function getIncludeValue($node, array $constants = [])
-    {
-        $nodeClass = get_class($node);
-
-        switch ($nodeClass) {
-            case 'PhpParser\Node\Scalar\MagicConst\Dir':
-
-                if (!isset($constants['__DIR__']))
-                    throw new Exception("Constant \"__DIR__\" is missing.");
-
-                return $constants['__DIR__'];
-                break;
-
-            case 'PhpParser\Node\Scalar\MagicConst\File':
-
-                if (!isset($constants['__FILE__']))
-                    throw new Exception("Constant \"__FILE__\" is missing.");
-
-                return $constants['__FILE__'];
-                break;
-
-            case 'PhpParser\Node\Expr\BinaryOp\Concat':
-
-                return self::getIncludeValue($node->left, $constants) . self::getIncludeValue($node->right, $constants);
-                break;
-
-            case 'PhpParser\Node\Expr\FuncCall':
-
-                if (!function_exists(($function = (string)$node->name)))
-                    throw new Exception("Function \"$function\" does not exist.");
-
-                $args = [];
-                foreach($node->args as $k => $i) {
-                    $args[] = self::getIncludeValue($i->value, $constants);
-                }
-
-                return call_user_func_array($function, $args);
-                break;
-
-            default:
-
-                return $node->value;
-        }
-    }
-
-    protected function cleanCode($code)
-    {
-        $code = ($this->removeDebugInfo === true) ? str_replace(['# --- END;'], '', $code) : $code; //remove end markers to avoid unnecessary semicolon
-        $code = preg_replace("/<\?php([\s]?|[\s\t]*|[\r\n]*|[\r\n]+)*\?>/", PHP_EOL, $code); //remove empty php tags
-        $code = preg_replace("/(^[\r\n]*|[\r\n]+)[\s\t]*[\r\n]+/", PHP_EOL, $code); //remove empty lines
-        //$code = $code . '<?php echo "syntaxerror'; //test error in output file
-
-        return $code;
+        $this->_parsedFiles[$this->getCurrentFile()] = array_merge(
+            isset($this->_parsedFiles[$this->getCurrentFile()]) ? $this->_parsedFiles[$this->getCurrentFile()] : [],
+            [
+                'current_file' => $this->getCurrentFile(),
+                'original_code' => $this->getOrgCode(),
+                'stmts_tree' => $this->getStmts(),
+            ]
+        );
     }
 }
