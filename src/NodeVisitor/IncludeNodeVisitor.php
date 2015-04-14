@@ -7,10 +7,12 @@ use \Exception;
 class IncludeNodeVisitor extends \PhpParser\NodeVisitorAbstract
 {
     private $_phpFileCombineInstance = null;
+    private $_currentFile = null;
 
-    public function __construct(\cakebake\combiner\PhpFileCombine $phpFileCombineInstance)
+    public function __construct(\cakebake\combiner\PhpFileCombine $phpFileCombineInstance, $currentFile)
     {
         $this->_phpFileCombineInstance = $phpFileCombineInstance;
+        $this->_currentFile = $currentFile;
     }
 
     public function leaveNode(\PhpParser\Node $node)
@@ -33,7 +35,7 @@ class IncludeNodeVisitor extends \PhpParser\NodeVisitorAbstract
                         return \PhpParser\NodeTraverser::REMOVE_NODE;
                 }
 
-                if (($this->getPhpFileCombine()->parseFile($currentFile)) === false)
+                if (($this->getPhpFileCombine()->parseFile($currentFile, $parentFile)) === false)
                     return \PhpParser\NodeTraverser::REMOVE_NODE;
 
                 return $this->getPhpFileCombine()->traverse()->getStmts();
@@ -81,7 +83,7 @@ class IncludeNodeVisitor extends \PhpParser\NodeVisitorAbstract
     */
     protected function getCurrentFile()
     {
-        return $this->getPhpFileCombine()->getCurrentFile();
+        return $this->_currentFile;
     }
 
     /**

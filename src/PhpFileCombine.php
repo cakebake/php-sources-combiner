@@ -78,18 +78,20 @@ class PhpFileCombine
     /**
     * Stmts tree setter from file
     *
-    * @param string $file
+    * @param string $currentFile
+    * @param string $parentFile
     * @return PhpFileCombine
     */
-    public function parseFile($file)
+    public function parseFile($currentFile, $parentFile = null)
     {
-        if (($orgCode = @trim(@file_get_contents($file))) === false ||
+        if (($orgCode = @trim(@file_get_contents($currentFile))) === false ||
             empty($orgCode)) {
 
             return false;
         }
 
-        $this->setCurrentFile($file);
+        $this->setParentFile($parentFile, $currentFile);
+        $this->setCurrentFile($currentFile);
         $this->parse($orgCode);
 
         return $this;
@@ -121,7 +123,21 @@ class PhpFileCombine
             $this->setStmts($stmts);
         }
 
-        $this->setStmts($this->getTraverser()->traverse($this->getStmts()));
+        $this->traverseIncludeNodes();
+
+        return $this;
+    }
+
+    /**
+    * Get node traverser and its visitors
+    * @return \PhpParser\NodeTraverser
+    */
+    public function traverseIncludeNodes()
+    {
+        $traverser = new NodeTraverser;
+        $traverser->addVisitor(new IncludeNodeVisitor($this, $this->getCurrentFile()));
+
+        $this->setStmts($traverser->traverse($this->getStmts()));
 
         return $this;
     }
@@ -344,21 +360,6 @@ class PhpFileCombine
         }
 
         return $this->_parser;
-    }
-
-    /**
-    * Get node traverser and its visitors
-    * @return \PhpParser\NodeTraverser
-    */
-    public function getTraverser()
-    {
-        if ($this->_traverser === null) {
-            $this->_traverser = new NodeTraverser;
-        }
-
-        $this->_traverser->addVisitor(new IncludeNodeVisitor($this));
-
-        return $this->_traverser;
     }
 
     /**
