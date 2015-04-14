@@ -28,12 +28,12 @@ class IncludeNodeVisitor extends \PhpParser\NodeVisitorAbstract
                     ]
                 );
 
-                if ($node->type == \PhpParser\Node\Expr\Include_::TYPE_INCLUDE_ONCE ||
-                    $node->type == \PhpParser\Node\Expr\Include_::TYPE_REQUIRE_ONCE) {
-
-                    if ($this->getPhpFileCombine()->isParsed($currentFile))
-                        return \PhpParser\NodeTraverser::REMOVE_NODE;
-                }
+//                if ($node->type == \PhpParser\Node\Expr\Include_::TYPE_INCLUDE_ONCE ||
+//                    $node->type == \PhpParser\Node\Expr\Include_::TYPE_REQUIRE_ONCE) {
+//
+//                    if ($this->getPhpFileCombine()->isParsed())
+//                        return \PhpParser\NodeTraverser::REMOVE_NODE;
+//                }
 
                 if (($this->getPhpFileCombine()->parseFile($currentFile, $parentFile)) === false)
                     return \PhpParser\NodeTraverser::REMOVE_NODE;

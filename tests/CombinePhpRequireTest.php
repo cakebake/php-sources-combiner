@@ -12,6 +12,8 @@ class CombinePhpRequireTest extends cakebake\combiner\TestCase
         $this->createFilesystem('test1LevelRequire');
 
         $this->assertFileExists($this->getFilesystemStream('index.php'));
+        $this->assertFileExists($this->getFilesystemStream('filename2.php'));
+        $this->assertFileExists($this->getFilesystemStream('empty_file.php'));
 
         $startFile = $this->getFilesystemStream('index.php');
         $outPath = $this->tmpDir . '/' . self::sanitizeFilename(__METHOD__ . '.php');
