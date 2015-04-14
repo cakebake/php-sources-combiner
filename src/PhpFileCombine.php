@@ -69,8 +69,6 @@ class PhpFileCombine
             $code = $this->setPrettyCode($this->getPrettyPrinter()->prettyPrint($this->getStmts()));
         }
 
-        $this->setPrettyCode($this->cleanCode($code));
-
         return $this;
     }
 
@@ -404,9 +402,9 @@ class PhpFileCombine
     *
     * @param string $code
     */
-    protected function cleanCode($code)
+    public static function cleanCode($code)
     {
-        /*$code = preg_replace("/(<\?php|\?>)([\s]?|[\s\t]*|[\r\n]*|[\r\n]+)*(\?>|<\?php)/", PHP_EOL, $code); //remove empty php tags*/
+        $code = preg_replace("/(<\?php|\?>)([\s]?|[\s\t]*|[\r\n]*|[\r\n]+)*(\?>|<\?php)/", PHP_EOL, $code); //remove empty php tags
         $code = preg_replace("/(^[\r\n]*|[\r\n]+)[\s\t]*[\r\n]+/", PHP_EOL, $code); //remove empty lines
         $code = trim($code);
 
