@@ -23,7 +23,6 @@ class PhpFileCombine
     private $_parser = null;
     private $_traverser = null;
     private $_prettyPrinter = null;
-    private static $_self = null;
 
     /**
     * Static class constructor
@@ -419,11 +418,8 @@ class PhpFileCombine
     */
     protected static function createInstance()
     {
-        if (self::$_self === null) {
-            $class = self::getClassName();
-            self::$_self = new $class;
-        }
+        $class = self::getClassName();
 
-        return self::$_self;
+        return new $class;
     }
 }

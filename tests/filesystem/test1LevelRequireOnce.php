@@ -7,7 +7,7 @@ return [
 
         //require_once filename1-level-1.php 3x
         require_once __DIR__ . "/filename1-level-1.php";
-        require_once __DIR__ . "/filename1-level-1.php";
+        require_once dirname(__FILE__) . "/filename1-level-1.php";
         require_once __DIR__ . "/filename1-level-1.php";
 
         //require_once filename2-level-1.php 1x
@@ -20,6 +20,4 @@ return [
     ',
     'filename1-level-1.php' => '<?php echo "hello filename1-level-1.php";',
     'filename2-level-1.php' => '<?php echo "hello filename2-level-1.php";',
-    //dynamic
-    'level-1' => 'SUBDIR',
 ];
