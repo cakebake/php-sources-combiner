@@ -8,6 +8,13 @@ return [
 
         //require_once level-1
         require_once __DIR__ . "/filename1-level-1.php";
+        require_once __DIR__ . "/filename1-level-1.php";
+        require_once __DIR__ . "/filename1-level-1.php";
+        require_once __DIR__ . "/filename1-level-1.php";
+        require_once __DIR__ . "/filename1-level-1.php";
+        require_once __DIR__ . "/filename1-level-1.php";
+        require_once __DIR__ . "/filename1-level-1.php";
+        require_once __DIR__ . "/filename1-level-1.php";
         require_once __DIR__ . "/filename2-level-1.php";
 
         //require_once next level from level-1

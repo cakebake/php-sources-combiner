@@ -26,6 +26,7 @@ class PhpFileCombine
 
     /**
     * Static class constructor
+    * @return PhpFileCombine
     */
     public static function init()
     {
@@ -413,6 +414,7 @@ class PhpFileCombine
 
     /**
     * Create class instance
+    * @return PhpFileCombine
     */
     protected static function createInstance()
     {

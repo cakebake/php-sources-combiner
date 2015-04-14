@@ -17,12 +17,14 @@ class CombinePhpRequireOnceTest extends cakebake\combiner\TestCase
 
         $startFile = $this->getFilesystemStream('index.php');
         $outPath = $this->tmpDir . '/' . self::sanitizeFilename(__METHOD__ . '.php');
-        $combine = PhpFileCombine::init()->parseFile($startFile)->traverse()->prettyPrint(true)->writeFile($outPath);
+        $this->assertInstanceOf('cakebake\combiner\PhpFileCombine', ($combine = PhpFileCombine::init()->parseFile($startFile)->traverse()->prettyPrint(true)->writeFile($outPath)));
 
         $this->assertFileHasNoErrors($outPath);
         $this->assertTrue($combine->isParsed('vfs://test1LevelRequireOnce/index.php'));
         $this->assertTrue($combine->isParsed('vfs://test1LevelRequireOnce/filename1-level-1.php'));
         $this->assertTrue($combine->isParsed('vfs://test1LevelRequireOnce/filename2-level-1.php'));
+
+        $this->assertEquals(preg_match_all('~hello filename1-level-1.php~', $combine->getPrettyCode()), 1, 'String "hello filename1-level-1.php" may occure only once');
     }
 
     /**
@@ -50,7 +52,7 @@ class CombinePhpRequireOnceTest extends cakebake\combiner\TestCase
 
         $startFile = $this->getFilesystemStream('index.php');
         $outPath = $this->tmpDir . '/' . self::sanitizeFilename(__METHOD__ . '.php');
-        $combine = PhpFileCombine::init()->parseFile($startFile)->traverse()->prettyPrint(true)->writeFile($outPath);
+        $this->assertInstanceOf('cakebake\combiner\PhpFileCombine', ($combine = PhpFileCombine::init()->parseFile($startFile)->traverse()->prettyPrint(true)->writeFile($outPath)));
 
         $this->assertFileHasNoErrors($outPath);
         $this->assertTrue($combine->isParsed('vfs://test10LevelsRequireOnce/index.php'));
@@ -58,5 +60,7 @@ class CombinePhpRequireOnceTest extends cakebake\combiner\TestCase
         $this->assertTrue($combine->isParsed('vfs://test10LevelsRequireOnce/level-1/filename2-level-2.php'));
         $this->assertTrue($combine->isParsed('vfs://test10LevelsRequireOnce/level-1/level-2/level-3/level-4/filename2-level-5.php'));
         $this->assertTrue($combine->isParsed('vfs://test10LevelsRequireOnce/level-1/level-2/level-3/level-4/level-5/level-6/level-7/level-8/level-9/filename1-level-10.php'));
+
+        $this->assertEquals(preg_match_all('~hello filename1-level-1.php~', $combine->getPrettyCode()), 1, 'String "hello filename1-level-1.php" may occure only once');
     }
 }
