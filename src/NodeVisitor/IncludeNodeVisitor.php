@@ -13,21 +13,28 @@ class IncludeNodeVisitor extends \PhpParser\NodeVisitorAbstract
 
     public function leaveNode(\PhpParser\Node $node)
     {
-        if (($currentFile = $this->getCurrentFile()) !== null) {
+        if (($parentFile = $this->getCurrentFile()) !== null) {
             if ($node instanceof \PhpParser\Node\Expr\Include_) {
 
-                $includeFile = self::getIncludeFile(
+                $currentFile = self::getIncludeFile(
                     $node->expr,
                     [
-                        '__DIR__' => dirname($currentFile),
-                        '__FILE__' => $currentFile,
+                        '__DIR__' => dirname($parentFile),
+                        '__FILE__' => $parentFile,
                     ]
                 );
 
-                if (($parseFile = $this->getPhpFileCombine()->parseFile($includeFile)) === false)
-                    return false;
+                if ($node->type == \PhpParser\Node\Expr\Include_::TYPE_INCLUDE_ONCE ||
+                    $node->type == \PhpParser\Node\Expr\Include_::TYPE_REQUIRE_ONCE) {
 
-                return $parseFile->traverse()->getStmts();
+                    if ($this->getPhpFileCombine()->isParsed())
+                        return \PhpParser\NodeTraverser::REMOVE_NODE;
+                }
+
+                if (($this->getPhpFileCombine()->parseFile($currentFile)) === false)
+                    return \PhpParser\NodeTraverser::REMOVE_NODE;
+
+                return $this->getPhpFileCombine()->traverse()->getStmts();
             }
         }
     }
