@@ -2,7 +2,12 @@
 
 //one level, simple php
 return [
-    'index.php' => '<?php
+    'index.php' => '
+<p>Hello world, we start with html...</p>
+<?= 12345 ?>
+<br />
+
+<?php
         //start file
         echo "hello world!";
 
