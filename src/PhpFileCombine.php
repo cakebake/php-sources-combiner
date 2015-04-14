@@ -18,6 +18,7 @@ class PhpFileCombine
     private $_currentFile = null;
     private $_outFile = null;
     private $_parsedFiles = [];
+    private $_fileKeys = [];
     private $_parser = null;
     private $_traverser = null;
     private $_prettyPrinter = null;
@@ -213,6 +214,13 @@ class PhpFileCombine
         return $this->getParserData($storage)['prettyCode'];
     }
 
+    /**
+    * Set pretty code
+    * 
+    * @param string $value
+    * @param string $storage
+    * @return value
+    */
     public function setPrettyCode($value, $storage = null)
     {
         return $this->setParserData('prettyCode', $value, $storage);
@@ -220,14 +228,18 @@ class PhpFileCombine
 
     /**
     * Get file key
-    *
+    * 
     * @param mixed $filePath
     */
     public function getFileKey($filePath = null)
     {
         $filePath = ($filePath !== null) ? $filePath : $this->getCurrentFile();
+        
+        if (!isset($this->_fileKeys[$filePath])) {
+            $this->_fileKeys[$filePath] = (($md5 = @md5_file($filePath)) !== false) ? $md5 : $filePath;
+        }
 
-        return (($md5 = @md5_file($filePath)) !== false) ? $md5 : $filePath;
+        return $this->_fileKeys[$filePath];
     }
 
     /**
