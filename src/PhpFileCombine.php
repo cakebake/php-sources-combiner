@@ -15,6 +15,7 @@ use Exception;
 */
 class PhpFileCombine
 {
+    private $_parentFile = null;
     private $_currentFile = null;
     private $_outFile = null;
     private $_parsedFiles = [];
@@ -127,6 +128,7 @@ class PhpFileCombine
 
     /**
     * Get current file
+    *
     * @return string
     */
     public function getCurrentFile()
@@ -137,16 +139,49 @@ class PhpFileCombine
     /**
     * Set current file path
     *
-    * @param string $currentFile
+    * @param string $value
+    * @param string $storage
+    * @return value
     */
     public function setCurrentFile($value, $storage = null)
     {
         $this->_currentFile = $value;
-        $this->setParserData('orgFile', $value, $storage);
+
+        return $this->setParserData('orgFile', $value, $storage);
+    }
+
+    /**
+    * Get parent file path
+    *
+    * @param string $storage
+    * @return string
+    */
+    public function getParentFile($storage = null)
+    {
+        if ($storage !== null) {
+            return $this->getParserData($storage)['parentFile'];
+        }
+
+        return $this->_parentFile;
+    }
+
+    /**
+    * Set parent file path
+    *
+    * @param string $value
+    * @param string $storage
+    * @return value
+    */
+    public function setParentFile($value, $storage = null)
+    {
+        $this->_parentFile = $value;
+
+        return $this->setParserData('parentFile', $value, $storage);
     }
 
     /**
     * Get output file
+    *
     * @return string
     */
     public function getOutputFile()
@@ -158,6 +193,7 @@ class PhpFileCombine
     * Set global output file
     *
     * @param string $value
+    * @return value
     */
     public function setOutputFile($value)
     {
@@ -166,6 +202,8 @@ class PhpFileCombine
 
     /**
     * Get stmts tree
+    *
+    * @param string $storage
     * @return array Stmts tree
     */
     public function getStmts($storage = null)
@@ -178,6 +216,7 @@ class PhpFileCombine
     *
     * @param array $value
     * @param string $storage
+    * @return value
     */
     public function setStmts(array $value, $storage = null)
     {
@@ -187,6 +226,7 @@ class PhpFileCombine
     /**
     * Get original code from storage
     *
+    * @param string $storage
     * @return string
     */
     public function getOrgCode($storage = null)
@@ -197,7 +237,9 @@ class PhpFileCombine
     /**
     * Set original code to storage
     *
-    * @param string $orgCode
+    * @param string $value
+    * @param string $storage
+    * @return value
     */
     public function setOrgCode($value, $storage = null)
     {
@@ -207,7 +249,8 @@ class PhpFileCombine
     /**
     * Get pretty code
     *
-    * @return string
+    * @param string $storage
+    * @return value
     */
     public function getPrettyCode($storage = null)
     {
@@ -216,7 +259,7 @@ class PhpFileCombine
 
     /**
     * Set pretty code
-    * 
+    *
     * @param string $value
     * @param string $storage
     * @return value
@@ -228,13 +271,13 @@ class PhpFileCombine
 
     /**
     * Get file key
-    * 
-    * @param mixed $filePath
+    *
+    * @param string $filePath
     */
     public function getFileKey($filePath = null)
     {
         $filePath = ($filePath !== null) ? $filePath : $this->getCurrentFile();
-        
+
         if (!isset($this->_fileKeys[$filePath])) {
             $this->_fileKeys[$filePath] = (($md5 = @md5_file($filePath)) !== false) ? $md5 : $filePath;
         }
