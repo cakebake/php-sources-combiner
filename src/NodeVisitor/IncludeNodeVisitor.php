@@ -2,6 +2,8 @@
 
 namespace cakebake\combiner\NodeVisitor;
 
+use \Exception;
+
 class IncludeNodeVisitor extends \PhpParser\NodeVisitorAbstract
 {
     private $_phpFileCombineInstance = null;
@@ -27,7 +29,7 @@ class IncludeNodeVisitor extends \PhpParser\NodeVisitorAbstract
                 if ($node->type == \PhpParser\Node\Expr\Include_::TYPE_INCLUDE_ONCE ||
                     $node->type == \PhpParser\Node\Expr\Include_::TYPE_REQUIRE_ONCE) {
 
-                    if ($this->getPhpFileCombine()->isParsed())
+                    if ($this->getPhpFileCombine()->isParsed($currentFile))
                         return \PhpParser\NodeTraverser::REMOVE_NODE;
                 }
 
