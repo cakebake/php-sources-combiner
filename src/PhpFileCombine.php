@@ -6,7 +6,9 @@ use PhpParser\Parser;
 use PhpParser\Lexer\Emulative as LexerEmulative;
 use PhpParser\PrettyPrinter\Standard as PrettyPrinter;
 use PhpParser\NodeTraverser;
+use PhpParser\NodeVisitor\NameResolver;
 use cakebake\combiner\NodeVisitor\IncludeNodeVisitor;
+use cakebake\combiner\NodeVisitor\NamespaceNodeVisitor;
 use Exception;
 
 /**
@@ -105,6 +107,23 @@ class PhpFileCombine
     {
         $this->setOrgCode($code);
         $this->setStmts($this->getParser()->parse($code));
+        $this->setNamespace();
+
+        return $this;
+    }
+
+    /**
+    * Set namespace, when no namespace exists
+    *
+    * @param array $stmts
+    * @return PhpFileCombine
+    */
+    public function setNamespace(array $stmts = [])
+    {
+        $stmts = empty($stmts) ? $this->getStmts() : $stmts;
+        if (isset($stmts[0]) && ($stmts[0] instanceof \PhpParser\Node\Stmt\Namespace_ === false)) {
+            $this->setStmts([new \PhpParser\Node\Stmt\Namespace_(new \PhpParser\Node\Name('JA' . $this->getFileKey()), $stmts)]);
+        }
 
         return $this;
     }
@@ -122,18 +141,38 @@ class PhpFileCombine
         }
 
         $this->traverseIncludeNodes();
+        $this->traverseNamespaceNodes();
 
         return $this;
     }
 
     /**
-    * Get node traverser and its visitors
+    * Get node traverser and its include visitor
+    *
+    * @param array $stmts
     * @return \PhpParser\NodeTraverser
     */
-    public function traverseIncludeNodes()
+    public function traverseIncludeNodes(array $stmts = [])
     {
         $traverser = new NodeTraverser;
         $traverser->addVisitor(new IncludeNodeVisitor($this, $this->getCurrentFile()));
+
+        $this->setStmts($traverser->traverse($this->getStmts()));
+
+        return $this;
+    }
+
+    /**
+    * Get node traverser and its namespace visitor
+    *
+    * @param array $stmts
+    * @return \PhpParser\NodeTraverser
+    */
+    public function traverseNamespaceNodes(array $stmts = [])
+    {
+        $traverser = new NodeTraverser;
+        $traverser->addVisitor(new NameResolver);
+        $traverser->addVisitor(new NamespaceNodeVisitor);
 
         $this->setStmts($traverser->traverse($this->getStmts()));
 
