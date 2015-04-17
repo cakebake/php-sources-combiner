@@ -1,39 +1,46 @@
 <?php
 
-//CombinePhpCommentsTest filesystem
+//Namespaces filesystem
 return [
     'index.php' => '<?php
         namespace Hello\World;
+    
+        //comment before require namespaced file
+        require dirname(__FILE__) . "/included_file2.php";
+        
+        require dirname(__FILE__) . "/included_file3.php";
+        
+        //comment before require
+        require dirname(__FILE__) . "/included_file.php";
+    ',
+    'included_file.php' => '<?php
+        //comment start in included file
+        echo Test::hello();
+    ',
+    'included_file2.php' => '<?php
+        //comment in required namespaced file
+        namespace Hello\World\Check;
+        
+        class Test
+        {
+            const TEST = 2;
+        }
 
+        //echo Test::TEST;
+    ',
+    'included_file3.php' => '<?php
+        //no namespace
+        use \Hello\World\Check\Test as MyTest;
+        
+        //check conflict
         class Test
         {
             const HELLO = 1;
 
             public static function hello()
             {
-                return "hello";
+                return self::HELLO . MyTest::TEST;
             }
         }
-
-        namespace Hello\Foo;
-
-        use \Hello\World\Test as Alias;
-
-        echo Alias::hello();
-        echo Alias::HELLO;
-
-        require dirname(__FILE__) . "/included_file.php";
-    ',
-    'included_file.php' => '<?php
-        //comment start in included file
-        echo \Hello\World\Test::hello();
-        echo \Hello\World\Test::HELLO;
-
-        class demo
-        {
-            const TEST = 1;
-        }
-
-        echo demo::TEST;
     ',
 ];

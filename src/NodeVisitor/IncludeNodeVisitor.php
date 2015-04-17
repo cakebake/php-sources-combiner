@@ -41,10 +41,17 @@ class IncludeNodeVisitor extends \PhpParser\NodeVisitorAbstract
                 $stmts = $this->getPhpFileCombine()->traverseIncludeNodes()->getStmts();
 
                 if (isset($stmts[0])) {
-                    $stmts[0]->setAttribute('comments', array_merge(
-                        $node->getAttribute('comments', []),
-                        $stmts[0]->getAttribute('comments', [])
-                    ));
+                    if ($stmts[0] instanceof \PhpParser\Node\Stmt\Namespace_ === false) {
+                        $stmts[0]->setAttribute('comments', array_merge(
+                            $node->getAttribute('comments', []),
+                            $stmts[0]->getAttribute('comments', [])
+                        ));
+                    } else {
+                        $stmts[0]->stmts[0]->setAttribute('comments', array_merge(
+                            $node->getAttribute('comments', []),
+                            $stmts[0]->stmts[0]->getAttribute('comments', [])
+                        ));
+                    }
                 }
 
                 return $stmts;
