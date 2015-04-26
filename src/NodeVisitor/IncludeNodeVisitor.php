@@ -2,7 +2,7 @@
 
 namespace cakebake\combiner\NodeVisitor;
 
-use \Exception;
+use Exception;
 
 class IncludeNodeVisitor extends \PhpParser\NodeVisitorAbstract
 {
@@ -23,13 +23,14 @@ class IncludeNodeVisitor extends \PhpParser\NodeVisitorAbstract
                 $currentFile = self::getIncludeFile(
                     $node->expr,
                     [
-                        '__DIR__' => dirname($parentFile),
+                        '__DIR__'  => dirname($parentFile),
                         '__FILE__' => $parentFile,
                     ]
                 );
 
                 if ($node->type == \PhpParser\Node\Expr\Include_::TYPE_INCLUDE_ONCE ||
-                    $node->type == \PhpParser\Node\Expr\Include_::TYPE_REQUIRE_ONCE) {
+                    $node->type == \PhpParser\Node\Expr\Include_::TYPE_REQUIRE_ONCE
+                ) {
 
                     if ($this->getPhpFileCombine()->isParsed($currentFile))
                         return \PhpParser\NodeTraverser::REMOVE_NODE;
@@ -59,6 +60,16 @@ class IncludeNodeVisitor extends \PhpParser\NodeVisitorAbstract
         }
     }
 
+    /**
+     * Get current file
+     *
+     * @return string
+     */
+    protected function getCurrentFile()
+    {
+        return $this->_currentFile;
+    }
+
     public function getIncludeFile(\PhpParser\Node $node)
     {
         switch (get_class($node)) {
@@ -81,9 +92,10 @@ class IncludeNodeVisitor extends \PhpParser\NodeVisitorAbstract
                     throw new Exception("Function \"$function\" does not exist.");
                 }
                 $args = [];
-                foreach($node->args as $k => $i) {
+                foreach ($node->args as $k => $i) {
                     $args[] = self::getIncludeFile($i->value);
                 }
+
                 return call_user_func_array($function, $args);
                 break;
 
@@ -94,18 +106,10 @@ class IncludeNodeVisitor extends \PhpParser\NodeVisitorAbstract
     }
 
     /**
-    * Get current file
-    * @return string
-    */
-    protected function getCurrentFile()
-    {
-        return $this->_currentFile;
-    }
-
-    /**
-    * Get combiner instance
-    * @return PhpFileCombine
-    */
+     * Get combiner instance
+     *
+     * @return PhpFileCombine
+     */
     protected function getPhpFileCombine()
     {
         return $this->_phpFileCombineInstance;

@@ -14,7 +14,8 @@ class NamespaceNodeVisitor extends \PhpParser\NodeVisitorAbstract
             return new Node\Name($node->toString('_'));
         } elseif ($node instanceof Stmt\Class_
             || $node instanceof Stmt\Interface_
-            || $node instanceof Stmt\Function_) {
+            || $node instanceof Stmt\Function_
+        ) {
 
             $node->name = $node->namespacedName->toString('_');
         } elseif ($node instanceof Stmt\Const_) {

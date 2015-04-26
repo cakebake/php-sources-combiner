@@ -2,21 +2,22 @@
 
 namespace cakebake\combiner;
 
-use PhpParser\Node\Name;
-use PhpParser\Node\Stmt\Namespace_;
-use PhpParser\Parser;
-use PhpParser\Lexer\Emulative as LexerEmulative;
-use PhpParser\PrettyPrinter\Standard as PrettyPrinter;
-use PhpParser\NodeTraverser;
-use PhpParser\NodeVisitor\NameResolver;
 use cakebake\combiner\NodeVisitor\IncludeNodeVisitor;
 use cakebake\combiner\NodeVisitor\NamespaceNodeVisitor;
+use PhpParser\Lexer\Emulative as LexerEmulative;
+use PhpParser\Node\Name;
+use PhpParser\Node\Stmt\Namespace_;
+use PhpParser\NodeTraverser;
+use PhpParser\NodeVisitor\NameResolver;
+use PhpParser\Parser;
+use PhpParser\PrettyPrinter\Standard as PrettyPrinter;
 
 
 /**
-* PhpFileCombine
-* @example PhpFileCombine::init()->parseFile($startFile)->traverse()->prettyPrint(true)->writeFile($outPath);
-*/
+ * PhpFileCombine
+ *
+ * @example PhpFileCombine::init()->parseFile($startFile)->traverse()->prettyPrint(true)->writeFile($outPath);
+ */
 class PhpFileCombine
 {
     private $_parentFile = null;
@@ -28,21 +29,22 @@ class PhpFileCombine
     private $_prettyPrinter = null;
 
     /**
-    * Static class constructor
-    * @return PhpFileCombine
-    */
+     * Static class constructor
+     *
+     * @return PhpFileCombine
+     */
     public static function init()
     {
         return self::createInstance();
     }
 
     /**
-    * Write the output file
-    *
-    * @param string $filename
-    * @param string $prettyCode
-    * @return PhpFileCombine|false Object or false on write failure
-    */
+     * Write the output file
+     *
+     * @param string $filename
+     * @param string $prettyCode
+     * @return PhpFileCombine|false Object or false on write failure
+     */
     public function writeFile($filename, $prettyCode = null)
     {
         $this->setOutputFile($filename);
@@ -55,12 +57,12 @@ class PhpFileCombine
     }
 
     /**
-    * Pretty prints the stmts tree
-    *
-    * @param bool $finalPrint Adds php tags
-    * @param array $stmts Stmts tree
-    * @return PhpFileCombine
-    */
+     * Pretty prints the stmts tree
+     *
+     * @param bool  $finalPrint Adds php tags
+     * @param array $stmts      Stmts tree
+     * @return PhpFileCombine
+     */
     public function prettyPrint($finalPrint = false, array $stmts = [])
     {
         if (!empty($stmts)) {
@@ -77,16 +79,17 @@ class PhpFileCombine
     }
 
     /**
-    * Stmts tree setter from file
-    *
-    * @param string $currentFile
-    * @param string $parentFile
-    * @return PhpFileCombine
-    */
+     * Stmts tree setter from file
+     *
+     * @param string $currentFile
+     * @param string $parentFile
+     * @return PhpFileCombine
+     */
     public function parseFile($currentFile, $parentFile = null)
     {
         if (($orgCode = @trim(@file_get_contents($currentFile))) === false ||
-            empty($orgCode)) {
+            empty($orgCode)
+        ) {
 
             return false;
         }
@@ -99,11 +102,11 @@ class PhpFileCombine
     }
 
     /**
-    * Stmts tree setter from code
-    *
-    * @param string $code
-    * @return PhpFileCombine
-    */
+     * Stmts tree setter from code
+     *
+     * @param string $code
+     * @return PhpFileCombine
+     */
     public function parse($code)
     {
         $this->setOrgCode($code);
@@ -114,11 +117,11 @@ class PhpFileCombine
     }
 
     /**
-    * Set namespace, when no namespace exists
-    *
-    * @param array $stmts
-    * @return PhpFileCombine
-    */
+     * Set namespace, when no namespace exists
+     *
+     * @param array $stmts
+     * @return PhpFileCombine
+     */
     public function setNamespace(array $stmts = [])
     {
         $stmts = empty($stmts) ? $this->getStmts() : $stmts;
@@ -130,11 +133,11 @@ class PhpFileCombine
     }
 
     /**
-    * Traverse stmts tree
-    *
-    * @param array $stmts
-    * @return PhpFileCombine
-    */
+     * Traverse stmts tree
+     *
+     * @param array $stmts
+     * @return PhpFileCombine
+     */
     public function traverse(array $stmts = [])
     {
         if (!empty($stmts)) {
@@ -181,10 +184,10 @@ class PhpFileCombine
     }
 
     /**
-    * Get current file
-    *
-    * @return string
-    */
+     * Get current file
+     *
+     * @return string
+     */
     public function getCurrentFile()
     {
         return $this->_currentFile;
@@ -205,11 +208,11 @@ class PhpFileCombine
     }
 
     /**
-    * Get parent file path
-    *
-    * @param string $storage
-    * @return string
-    */
+     * Get parent file path
+     *
+     * @param string $storage
+     * @return string
+     */
     public function getParentFile($storage = null)
     {
         if ($storage !== null) {
@@ -220,12 +223,12 @@ class PhpFileCombine
     }
 
     /**
-    * Set parent file path
-    *
-    * @param string $value
-    * @param string $storage
-    * @return string
-    */
+     * Set parent file path
+     *
+     * @param string $value
+     * @param string $storage
+     * @return string
+     */
     public function setParentFile($value, $storage = null)
     {
         $this->_parentFile = $value;
@@ -234,10 +237,10 @@ class PhpFileCombine
     }
 
     /**
-    * Get output file
-    *
-    * @return string
-    */
+     * Get output file
+     *
+     * @return string
+     */
     public function getOutputFile()
     {
         return $this->_outFile;
@@ -255,11 +258,11 @@ class PhpFileCombine
     }
 
     /**
-    * Get stmts tree
-    *
-    * @param string $storage
-    * @return array Stmts tree
-    */
+     * Get stmts tree
+     *
+     * @param string $storage
+     * @return array Stmts tree
+     */
     public function getStmts($storage = null)
     {
         return $this->getParserData($storage)['stmts'];
@@ -278,34 +281,34 @@ class PhpFileCombine
     }
 
     /**
-    * Get original code from storage
-    *
-    * @param string $storage
-    * @return string
-    */
+     * Get original code from storage
+     *
+     * @param string $storage
+     * @return string
+     */
     public function getOrgCode($storage = null)
     {
         return $this->getParserData($storage)['orgCode'];
     }
 
     /**
-    * Set original code to storage
-    *
-    * @param string $value
-    * @param string $storage
-    * @return string
-    */
+     * Set original code to storage
+     *
+     * @param string $value
+     * @param string $storage
+     * @return string
+     */
     public function setOrgCode($value, $storage = null)
     {
         return $this->setParserData('orgCode', $value, $storage);
     }
 
     /**
-    * Get pretty code
-    *
-    * @param string $storage
-    * @return string
-    */
+     * Get pretty code
+     *
+     * @param string $storage
+     * @return string
+     */
     public function getPrettyCode($storage = null)
     {
         return $this->getParserData($storage)['prettyCode'];
@@ -324,10 +327,10 @@ class PhpFileCombine
     }
 
     /**
-    * Get file key
-    *
-    * @param string $filePath
-    */
+     * Get file key
+     *
+     * @param string $filePath
+     */
     public function getFileKey($filePath = null)
     {
         $filePath = ($filePath !== null) ? $filePath : $this->getCurrentFile();
@@ -340,12 +343,12 @@ class PhpFileCombine
     }
 
     /**
-    * Get parsed files storage; all or for specific file
-    *
-    * @param mixed $filePath Specific file path, defaults to null for current file
-    * @param bool $getAll Get all or specific
-    * @return array|null
-    */
+     * Get parsed files storage; all or for specific file
+     *
+     * @param mixed $filePath Specific file path, defaults to null for current file
+     * @param bool  $getAll   Get all or specific
+     * @return array|null
+     */
     public function getParserData($filePath = null, $getAll = false)
     {
         if ($getAll === false) {
@@ -371,13 +374,13 @@ class PhpFileCombine
     }
 
     /**
-    * Set current parser info
-    *
-    * @param string $key
-    * @param mixed $value
-    * @param string $storage Specific file path, defaults to null for current file
-    * @return mixed
-    */
+     * Set current parser info
+     *
+     * @param string $key
+     * @param mixed  $value
+     * @param string $storage Specific file path, defaults to null for current file
+     * @return mixed
+     */
     public function setParserData($key, $value, $storage = null)
     {
         $storage = $this->getFileKey($storage);
@@ -390,9 +393,10 @@ class PhpFileCombine
     }
 
     /**
-    * Get parser
-    * @return \PhpParser\Parser
-    */
+     * Get parser
+     *
+     * @return \PhpParser\Parser
+     */
     public function getParser()
     {
         if ($this->_parser === null) {
@@ -403,9 +407,10 @@ class PhpFileCombine
     }
 
     /**
-    * Get pretty printer
-    * @return \PhpParser\PrettyPrinter\Standard
-    */
+     * Get pretty printer
+     *
+     * @return \PhpParser\PrettyPrinter\Standard
+     */
     public function getPrettyPrinter()
     {
         if ($this->_prettyPrinter === null) {
@@ -416,8 +421,8 @@ class PhpFileCombine
     }
 
     /**
-    * Returns current class name
-    */
+     * Returns current class name
+     */
     public static function getClassName()
     {
         return __CLASS__;
@@ -434,9 +439,9 @@ class PhpFileCombine
         $this->_parsedFiles[$key] = array_merge(
             isset($this->_parsedFiles[$key]) ? $this->_parsedFiles[$key] : [],
             [
-                'current_file' => $this->getCurrentFile(),
+                'current_file'  => $this->getCurrentFile(),
                 'original_code' => $this->getOrgCode(),
-                'stmts_tree' => $this->getStmts(),
+                'stmts_tree'    => $this->getStmts(),
             ]
         );
     }
@@ -457,9 +462,10 @@ class PhpFileCombine
     }
 
     /**
-    * Create class instance
-    * @return PhpFileCombine
-    */
+     * Create class instance
+     *
+     * @return PhpFileCombine
+     */
     protected static function createInstance()
     {
         $class = self::getClassName();
