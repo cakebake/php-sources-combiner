@@ -2,6 +2,8 @@
 
 namespace cakebake\combiner;
 
+use PhpParser\Node\Name;
+use PhpParser\Node\Stmt\Namespace_;
 use PhpParser\Parser;
 use PhpParser\Lexer\Emulative as LexerEmulative;
 use PhpParser\PrettyPrinter\Standard as PrettyPrinter;
@@ -9,7 +11,7 @@ use PhpParser\NodeTraverser;
 use PhpParser\NodeVisitor\NameResolver;
 use cakebake\combiner\NodeVisitor\IncludeNodeVisitor;
 use cakebake\combiner\NodeVisitor\NamespaceNodeVisitor;
-use Exception;
+
 
 /**
 * PhpFileCombine
@@ -23,7 +25,6 @@ class PhpFileCombine
     private $_parsedFiles = [];
     private $_fileKeys = [];
     private $_parser = null;
-    private $_traverser = null;
     private $_prettyPrinter = null;
 
     /**
@@ -67,9 +68,9 @@ class PhpFileCombine
         }
 
         if ($finalPrint === true) {
-            $code = $this->setPrettyCode($this->getPrettyPrinter()->prettyPrintFile($this->getStmts()));
+            $this->setPrettyCode($this->getPrettyPrinter()->prettyPrintFile($this->getStmts()));
         } else {
-            $code = $this->setPrettyCode($this->getPrettyPrinter()->prettyPrint($this->getStmts()));
+            $this->setPrettyCode($this->getPrettyPrinter()->prettyPrint($this->getStmts()));
         }
 
         return $this;
@@ -121,8 +122,8 @@ class PhpFileCombine
     public function setNamespace(array $stmts = [])
     {
         $stmts = empty($stmts) ? $this->getStmts() : $stmts;
-        if (isset($stmts[0]) && ($stmts[0] instanceof \PhpParser\Node\Stmt\Namespace_ === false)) {
-            $this->setStmts([new \PhpParser\Node\Stmt\Namespace_(new \PhpParser\Node\Name('JA' . $this->getFileKey()), $stmts)]);
+        if (isset($stmts[0]) && ($stmts[0] instanceof Namespace_ === false)) {
+            $this->setStmts([new Namespace_(new Name('JA' . $this->getFileKey()), $stmts)]);
         }
 
         return $this;
@@ -147,12 +148,12 @@ class PhpFileCombine
     }
 
     /**
-    * Get node traverser and its include visitor
-    *
-    * @param array $stmts
-    * @return \PhpParser\NodeTraverser
-    */
-    public function traverseIncludeNodes(array $stmts = [])
+     * Get node traverser and its include visitor
+     *
+     * @return \PhpParser\NodeTraverser
+     * @internal param array $stmts
+     */
+    public function traverseIncludeNodes()
     {
         $traverser = new NodeTraverser;
         $traverser->addVisitor(new IncludeNodeVisitor($this, $this->getCurrentFile()));
@@ -163,12 +164,12 @@ class PhpFileCombine
     }
 
     /**
-    * Get node traverser and its namespace visitor
-    *
-    * @param array $stmts
-    * @return \PhpParser\NodeTraverser
-    */
-    public function traverseNamespaceNodes(array $stmts = [])
+     * Get node traverser and its namespace visitor
+     *
+     * @return \PhpParser\NodeTraverser
+     * @internal param array $stmts
+     */
+    public function traverseNamespaceNodes()
     {
         $traverser = new NodeTraverser;
         $traverser->addVisitor(new NameResolver);
@@ -190,12 +191,12 @@ class PhpFileCombine
     }
 
     /**
-    * Set current file path
-    *
-    * @param string $value
-    * @param string $storage
-    * @return value
-    */
+     * Set current file path
+     *
+     * @param string $value
+     * @param string $storage
+     * @return string
+     */
     public function setCurrentFile($value, $storage = null)
     {
         $this->_currentFile = $value;
@@ -223,7 +224,7 @@ class PhpFileCombine
     *
     * @param string $value
     * @param string $storage
-    * @return value
+    * @return string
     */
     public function setParentFile($value, $storage = null)
     {
@@ -243,11 +244,11 @@ class PhpFileCombine
     }
 
     /**
-    * Set global output file
-    *
-    * @param string $value
-    * @return value
-    */
+     * Set global output file
+     *
+     * @param string $value
+     * @return string
+     */
     public function setOutputFile($value)
     {
         return $this->_outFile = $value;
@@ -265,12 +266,12 @@ class PhpFileCombine
     }
 
     /**
-    * Set stmts tree to storage
-    *
-    * @param array $value
-    * @param string $storage
-    * @return value
-    */
+     * Set stmts tree to storage
+     *
+     * @param array  $value
+     * @param string $storage
+     * @return array
+     */
     public function setStmts(array $value, $storage = null)
     {
         return $this->setParserData('stmts', $value, $storage);
@@ -292,7 +293,7 @@ class PhpFileCombine
     *
     * @param string $value
     * @param string $storage
-    * @return value
+    * @return string
     */
     public function setOrgCode($value, $storage = null)
     {
@@ -303,7 +304,7 @@ class PhpFileCombine
     * Get pretty code
     *
     * @param string $storage
-    * @return value
+    * @return string
     */
     public function getPrettyCode($storage = null)
     {
@@ -311,12 +312,12 @@ class PhpFileCombine
     }
 
     /**
-    * Set pretty code
-    *
-    * @param string $value
-    * @param string $storage
-    * @return value
-    */
+     * Set pretty code
+     *
+     * @param string $value
+     * @param string $storage
+     * @return string
+     */
     public function setPrettyCode($value, $storage = null)
     {
         return $this->setParserData('prettyCode', $value, $storage);
@@ -357,9 +358,11 @@ class PhpFileCombine
     }
 
     /**
-    * Check if parser info exists
-    * @param mixed $filePath Specific file path, defaults to null for current file
-    */
+     * Check if parser info exists
+     *
+     * @param mixed $filePath Specific file path, defaults to null for current file
+     * @return bool
+     */
     public function isParsed($filePath = null)
     {
         $key = $this->getFileKey($filePath);
@@ -373,7 +376,7 @@ class PhpFileCombine
     * @param string $key
     * @param mixed $value
     * @param string $storage Specific file path, defaults to null for current file
-    * @return value
+    * @return mixed
     */
     public function setParserData($key, $value, $storage = null)
     {
@@ -421,9 +424,10 @@ class PhpFileCombine
     }
 
     /**
-    * Updates parsed files storage with current parsing info
-    * @property $filePath string current file path
-    */
+     * Updates parsed files storage with current parsing info
+     *
+     * @param null $filePath string current file path
+     */
     protected function updateParsedFilesStorage($filePath = null)
     {
         $key = $this->getFileKey($filePath);
@@ -438,10 +442,11 @@ class PhpFileCombine
     }
 
     /**
-    * Clean some code
-    *
-    * @param string $code
-    */
+     * Clean some code
+     *
+     * @param string $code
+     * @return string
+     */
     public static function cleanCode($code)
     {
         $code = preg_replace("/(<\?php|\?>)([\s]?|[\s\t]*|[\r\n]*|[\r\n]+)*(\?>|<\?php)/", PHP_EOL, $code); //remove empty php tags
