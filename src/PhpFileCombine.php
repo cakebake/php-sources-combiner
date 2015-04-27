@@ -27,6 +27,7 @@ class PhpFileCombine
     private $_fileKeys = [];
     private $_parser = null;
     private $_prettyPrinter = null;
+    private $_cacheDir = null;
 
     /**
      * Static class constructor
@@ -87,12 +88,8 @@ class PhpFileCombine
      */
     public function parseFile($currentFile, $parentFile = null)
     {
-        if (($orgCode = @trim(@file_get_contents($currentFile))) === false ||
-            empty($orgCode)
-        ) {
-
+        if (($orgCode = $this->getFileContent($currentFile)) === null)
             return false;
-        }
 
         $this->setParentFile($parentFile, $currentFile);
         $this->setCurrentFile($currentFile);
@@ -111,6 +108,7 @@ class PhpFileCombine
     {
         $this->setOrgCode($code);
         $this->setStmts($this->getParser()->parse($code));
+        $this->setFileCacheStmts();
         $this->setNamespace();
 
         return $this;
@@ -181,6 +179,85 @@ class PhpFileCombine
         $this->setStmts($traverser->traverse($this->getStmts()));
 
         return $this;
+    }
+
+    /**
+     * @param $filePath
+     * @return null|string
+     */
+    public function getFileContent($filePath)
+    {
+        return (($c = @trim(@file_get_contents($filePath))) === false || empty($c)) ? null : $c;
+    }
+
+    /**
+     * Get cache path
+     *
+     * @return string|null
+     */
+    public function getCacheDir()
+    {
+        if ($this->_cacheDir === null) {
+            $this->setCacheDir(__DIR__ . '/../tmp/cache');
+        }
+
+        return $this->_cacheDir;
+    }
+
+    /**
+     * Overwrites default cache path
+     *
+     * @param string $cacheDir
+     * @return null|string
+     */
+    public function setCacheDir($cacheDir)
+    {
+        return $this->_cacheDir = (is_dir($cacheDir) && is_writable($cacheDir)) ? $cacheDir : null;
+    }
+
+    /**
+     * Checks if cache file exists and returns path to it
+     *
+     * @param $filePath
+     * @return null|string
+     */
+    public function getFileCachePath($filePath)
+    {
+        if (($cacheDir = $this->getCacheDir()) === null)
+            return null;
+
+        return file_exists(($cachePath = $cacheDir . '/' . $this->getFileKey($filePath))) ? $cachePath : null;
+    }
+
+    /**
+     * Get cached stmts tree of given file path
+     *
+     * @param $filePath
+     * @return null|string
+     */
+    public function getFileCacheStmts($filePath)
+    {
+        if (($cachePath = $this->getFileCachePath($filePath)) === null)
+            return null;
+
+        if (($cache = $this->getFileContent($cachePath)) === null)
+            return null;
+
+        return unserialize($cache);
+    }
+
+    /**
+     * Set stmts cache for current file
+     *
+     * @param null $stmts
+     * @return bool|\cakebake\combiner\PhpFileCombine
+     */
+    public function setFileCacheStmts()
+    {
+        if (($cacheDir = $this->getCacheDir()) === null)
+            return false;
+
+        return (@file_put_contents($cacheDir . '/' . $this->getFileKey(), serialize($this->getStmts()), LOCK_EX) !== false) ? $this : false;
     }
 
     /**
